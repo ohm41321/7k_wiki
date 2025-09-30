@@ -1,111 +1,114 @@
-"use client";
+'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import rehypeSanitize from 'rehype-sanitize';
 import Lightbox from '@/app/components/Lightbox';
-import Toast from '@/app/components/Toast';
+import CommentList from '@/app/components/CommentList';
+import CommentForm from '@/app/components/CommentForm';
 
-interface PostData {
-  slug: string;
-  title: string;
-  date: string;
-  author: string;
-  content: string;
-  imageUrls?: string[];
+interface PostClientProps {
+  post: {
+    slug: string;
+    title: string;
+    date: string;
+    author: string;
+    content: string;
+    category: string;
+    tags: string[];
+    imageUrls?: string[];
+  };
 }
 
-export default function PostClient({ post }: { post: PostData }) {
-  const router = useRouter();
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [objectFitStyle, setObjectFitStyle] = useState<'cover' | 'contain'>('cover');
+export default function PostClient({ post }: PostClientProps) {
+  const [lightbox, setLightbox] = useState<{ images: string[]; startIndex: number } | null>(null);
 
-  const openLightbox = (index: number) => {
-    setSelectedImageIndex(index);
-    setLightboxOpen(true);
+  useEffect(() => {
+    const handleContentImageClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'IMG' && target.closest('#post-content')) {
+        const contentImages = Array.from(document.querySelectorAll('#post-content img')).map(img => (img as HTMLImageElement).src);
+        const clickedIndex = contentImages.indexOf((target as HTMLImageElement).src);
+        if (clickedIndex !== -1) {
+          setLightbox({ images: contentImages, startIndex: clickedIndex });
+        }
+      }
+    };
+
+    document.addEventListener('click', handleContentImageClick);
+
+    return () => {
+      document.removeEventListener('click', handleContentImageClick);
+    };
+  }, []);
+
+  const formatDateThai = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Bangkok' });
   };
 
-  const closeLightbox = () => setLightboxOpen(false);
-
-  const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
-    try {
-      const res = await fetch(`/api/posts/${post.slug}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete post');
-      setShowToastMessage('Post deleted successfully!');
-      // refresh homepage data then navigate home
-      router.refresh();
-      router.push('/');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setShowToastMessage(`Error: ${message}`);
-    }
+  const formatTimeThai = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   };
-
-  const [showToastMessage, setShowToastMessage] = useState<string | null>(null);
 
   return (
-    <>
-      {showToastMessage && (
-        <Toast message={showToastMessage} onClose={() => setShowToastMessage(null)} />
+    <div className="bg-primary min-h-screen text-textLight">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <article>
+          <header className="mb-8 text-center">
+            {post.category && (
+              <Link href={`/category/${post.category.toLowerCase()}`}>
+                <span className="text-accent font-bold text-lg hover:underline">{post.category}</span>
+              </Link>
+            )}
+            <h1 className="text-4xl md:text-5xl font-extrabold text-secondary mb-3">{post.title}</h1>
+            <p className="text-textDark" suppressHydrationWarning>
+              By {post.author} on {formatDateThai(post.date)} at {formatTimeThai(post.date)}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2 justify-center">
+              {post.tags.map(tag => (
+                <Link href={`/tags/${tag.toLowerCase()}`} key={tag}>
+                  <span className="bg-gray-700 text-textLight px-2 py-1 rounded-md text-sm hover:bg-gray-600">#{tag}</span>
+                </Link>
+              ))}
+            </div>
+          </header>
+
+          {post.imageUrls && post.imageUrls.length > 0 && (
+            <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {post.imageUrls.map((url, index) => (
+                <div key={index} className="cursor-pointer" onClick={() => setLightbox({ images: post.imageUrls || [], startIndex: index })}>
+                  <Image
+                    src={url}
+                    alt={`${post.title} - Image ${index + 1}`}
+                    width={800}
+                    height={450}
+                    className="w-full h-auto rounded-lg shadow-lg object-cover hover:opacity-90 transition-opacity"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div
+            id="post-content"
+            className="prose prose-invert prose-lg mx-auto post-content"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+        </article>
+
+        <CommentList slug={post.slug} />
+        <CommentForm slug={post.slug} />
+      </main>
+
+      {lightbox && (
+        <Lightbox
+          images={lightbox.images}
+          startIndex={lightbox.startIndex}
+          onClose={() => setLightbox(null)}
+        />
       )}
-      <article className="bg-primary-dark bg-opacity-50 rounded-lg shadow-lg overflow-hidden border border-gray-700">
-        <div className="p-4 flex justify-end">
-          <button
-            onClick={() => setObjectFitStyle(prev => prev === 'cover' ? 'contain' : 'cover')}
-            className="px-4 py-2 bg-gray-700 text-white rounded-md text-sm"
-          >
-            Toggle Image Fit: {objectFitStyle}
-          </button>
-        </div>
-
-        {post.imageUrls && post.imageUrls.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-2">
-            {post.imageUrls.map((url, index) => (
-              <div key={index} className="relative w-full aspect-square cursor-pointer" onClick={() => openLightbox(index)}>
-                <Image src={url} alt={`${post.title} - Image ${index + 1}`} fill style={{ objectFit: objectFitStyle }} className="rounded-md" />
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="p-6 md:p-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-center mb-4 text-secondary">{post.title}</h1>
-          <p className="text-textLight text-sm text-center mb-8" suppressHydrationWarning>
-            By {post.author} | {new Date(post.date).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Bangkok' })} - {new Date(post.date).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })}
-          </p>
-
-          <div className="prose prose-lg dark:prose-invert max-w-none mx-auto text-textLight prose-headings:text-secondary prose-a:text-accent prose-strong:text-white prose-blockquote:border-accent prose-code:bg-gray-900 prose-code:p-1 prose-code:rounded-md">
-            {/* Preprocess __underline__ -> <u>..</u> and ||spoiler||, and use remark-breaks for line breaks */}
-            {(() => {
-              const processed = post.content
-                .replace(/__((?:(?!__).)+)__/g, '<u>$1</u>')
-                .replace(/\|\|((?:(?!\|\|).)+)\|\|/g, '<span class="spoiler" tabIndex="0">$1</span>')
-                .replace(/\+\+([^\+]+)\+\+/g, '<span style="font-size: 1.25em; font-weight: bold;">$1</span>')
-                .replace(/\?\?([^\|]+)\|([^?]+)\?\?/g, '<span title="$2" style="text-decoration: underline dotted;">$1</span>')
-                .replace(/\n/g, '<br />');
-              return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{processed}</ReactMarkdown>;
-            })()}
-          </div>
-
-          <div className="mt-10 pt-6 border-t border-gray-700 flex justify-center items-center gap-4">
-            <Link href="/" className="px-6 py-2 rounded-md font-semibold text-textLight bg-gray-700 hover:bg-gray-600 transition-colors">
-              Back to Home
-            </Link>
-            <button onClick={handleDelete} className="px-6 py-2 rounded-md font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors">Delete Post</button>
-          </div>
-        </div>
-      </article>
-
-      {lightboxOpen && post.imageUrls && (
-        <Lightbox images={post.imageUrls} startIndex={selectedImageIndex} onClose={closeLightbox} />
-      )}
-    </>
+    </div>
   );
 }

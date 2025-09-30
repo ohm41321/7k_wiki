@@ -1,5 +1,35 @@
 @import "tailwindcss";
 
+@keyframes rise {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: #c89b3c; /* Accent color */
+  animation: rise 20s infinite;
+}
+
+.post-content img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+}
+
 html,
 body {
   background-color: #111111; /* primary color */

@@ -16,6 +16,7 @@ export default function CreatePostModal() {
   const router = useRouter();
   
   const [title, setTitle] = useState('');
+  const [tags, setTags] = useState('');
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +130,7 @@ export default function CreatePostModal() {
       const res = await fetch('/api/posts/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, author, content, imageUrls }),
+        body: JSON.stringify({ title, author, content, imageUrls, tags }),
       });
 
       if (!res.ok) throw new Error('Failed to create post');
@@ -138,6 +139,7 @@ export default function CreatePostModal() {
       // clear inputs quickly
       setTitle('');
       setContent('');
+      setTags('');
       setSelectedFiles([]);
       setImagePreviews(prev => {
   prev.forEach(url => { try { URL.revokeObjectURL(url); } catch { } });
@@ -176,7 +178,7 @@ export default function CreatePostModal() {
         </div>
         <div className="min-w-0 flex-1">
           <form onSubmit={handleSubmit}>
-            <div className="border-b border-gray-700">
+            <div className="border-b border-gray-700 pb-4">
               <input
                 type="text"
                 className="block w-full bg-transparent border-0 focus:ring-0 sm:text-lg font-bold text-white placeholder-gray-500"
@@ -184,6 +186,13 @@ export default function CreatePostModal() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
+              />
+              <input
+                type="text"
+                className="mt-2 block w-full bg-transparent border-0 focus:ring-0 sm:text-sm text-white placeholder-gray-500"
+                placeholder="Tags (comma-separated, e.g., Guide, PvP, Beginner)"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
               />
               <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <textarea

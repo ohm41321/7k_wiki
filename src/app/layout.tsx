@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from './components/Navbar'; // Import Navbar
-
+import Navbar from './components/Navbar';
+import Footer from './components/Footer'; // Import Footer
 import { NextAuthProvider } from "./components/Providers";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -21,13 +21,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={`${inter.className} flex flex-col min-h-screen`} suppressHydrationWarning>
         <NextAuthProvider>
           <Navbar />
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
+          <main className="flex-grow w-full mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-8">
             {children}
           </main>
           {modal}
+          <Footer />
         </NextAuthProvider>
       </body>
     </html>

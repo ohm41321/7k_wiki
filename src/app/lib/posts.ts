@@ -2,11 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import { unstable_noStore as noStore } from 'next/cache';
+import { marked } from 'marked';
+
+const postsDirectory = path.join(process.cwd(), 'posts');
 
 export function getPosts() {
   noStore();
-  const postsDirectory = path.join(process.cwd(), 'posts');
-
   try {
     const filenames = fs.readdirSync(postsDirectory);
 
@@ -15,25 +16,16 @@ export function getPosts() {
       const fileContents = fs.readFileSync(fullPath, 'utf8');
       const { data } = matter(fileContents);
 
-      let imageUrls = null;
-      if (data.imageUrls) {
-        imageUrls = data.imageUrls.map((url: string) => {
-          if (url.startsWith('/')) {
-            const baseUrl = process.env.NODE_ENV === 'production' 
-              ? 'https://your-production-url.com' // Replace with your production URL
-              : 'http://localhost:3000';
-            return `${baseUrl}${url}`;
-          }
-          return url;
-        });
-      }
+      const tags = Array.isArray(data.tags) ? data.tags : [];
 
       return {
         slug: filename.replace(/\.md$/, ''),
         title: data.title,
         date: data.date,
         author: data.author,
-        imageUrls: imageUrls,
+        category: data.category || null,
+        tags: tags,
+        imageUrls: data.imageUrls || [],
       };
     });
 
@@ -43,5 +35,31 @@ export function getPosts() {
   } catch (error: any) {
     console.error('Error reading posts:', error);
     return [];
+  }
+}
+
+export function getPostBySlug(slug: string) {
+  noStore();
+  const fullPath = path.join(postsDirectory, `${slug}.md`);
+  try {
+    const fileContents = fs.readFileSync(fullPath, 'utf8');
+    const { data, content } = matter(fileContents);
+
+    const tags = Array.isArray(data.tags) ? data.tags : [];
+
+    const htmlContent = marked.parse(content);
+
+    return {
+      slug,
+      title: data.title,
+      date: data.date,
+      author: data.author,
+      category: data.category || null,
+      tags: tags,
+      imageUrls: data.imageUrls || [],
+      content: htmlContent,
+    };
+  } catch (error) {
+    return null;
   }
 }
