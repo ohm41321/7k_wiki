@@ -1,8 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export function getPosts() {
+  noStore();
   const postsDirectory = path.join(process.cwd(), 'posts');
 
   try {

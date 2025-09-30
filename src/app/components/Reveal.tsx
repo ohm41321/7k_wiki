@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, ReactNode } from 'react';
 
-export default function Reveal({ children, className = '' }: { children: ReactNode; className?: string }) {
+export default function Reveal({ children, className = '', replay = false }: { children: ReactNode; className?: string; replay?: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -12,7 +12,13 @@ export default function Reveal({ children, className = '' }: { children: ReactNo
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           el.classList.add('revealed');
-          obs.unobserve(el);
+          if (!replay) {
+            obs.unobserve(el);
+          }
+        } else {
+          if (replay) {
+            el.classList.remove('revealed');
+          }
         }
       });
     }, { threshold: 0.15 });
@@ -21,7 +27,7 @@ export default function Reveal({ children, className = '' }: { children: ReactNo
     obs.observe(el);
 
     return () => obs.disconnect();
-  }, []);
+  }, [replay]);
 
   return <div ref={ref} className={className}>{children}</div>;
 }

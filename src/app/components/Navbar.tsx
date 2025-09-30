@@ -39,7 +39,8 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link href="/" className="text-secondary font-bold text-2xl hover:text-accent transition-colors">
-              7KReHub
+              7KRe:Hub <br/>
+              <h1 className="text-xs">by Fonzu</h1>
             </Link>
           </div>
           <div className="flex items-center space-x-4">

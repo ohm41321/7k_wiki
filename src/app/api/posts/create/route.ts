@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import * as matter from 'gray-matter';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: Request) {
   try {
@@ -11,11 +12,7 @@ export async function POST(request: Request) {
       return new NextResponse(JSON.stringify({ message: 'Missing required fields' }), { status: 400 });
     }
 
-    const slug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-');
+    const slug = uuidv4();
 
     const date = new Date().toISOString();
 

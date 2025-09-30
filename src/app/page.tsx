@@ -33,13 +33,15 @@ export default async function Home() {
   <Image src={banner} alt="7K banner" fill style={{ objectFit: 'cover' }} className="absolute inset-0 -z-10" />
         <div className="absolute inset-0 bg-black/40 -z-5" />
         <div className="z-10 px-4">
-          <div className="mx-auto mb-4 w-full max-w-3xl">
-            <Image src={banner} alt="Site banner" width={1200} height={180} className="mx-auto rounded-md shadow-lg" />
-          </div>
-          <Reveal>
+          <Reveal replay={true}>
+            <div className="mx-auto mb-4 w-full max-w-3xl">
+              <Image src={banner} alt="Site banner" width={1200} height={180} className="mx-auto rounded-md shadow-lg" />
+            </div>
+          </Reveal>
+          <Reveal replay={true}>
             <h1 className="text-5xl md:text-7xl font-extrabold text-yellow-400 drop-shadow-lg mb-4 typing inline-block">7KRe:Hub</h1>
           </Reveal>
-          <Reveal>
+          <Reveal replay={true}>
             <p className="text-lg md:text-xl text-textLight fade-in mt-2">by Fonzu – คลังไกด์อัศวินแห่ง Rebirth</p>
           </Reveal>
         </div>
@@ -48,8 +50,8 @@ export default async function Home() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-secondary mb-2">Latest News</h2>
-          <p>Stay up to date with the latest articles and guides.</p>
+          <h2 className="text-4xl font-bold text-secondary mb-2">ห้องสมุด - Seven Knights Re:birth</h2>
+          <p>อัปเดตข่าวสาร ไกด์ และเคล็ดลับจากคอมมูนิตี้! <span className="text-primary">Powered by Ping Sensei (Zurzac)</span></p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

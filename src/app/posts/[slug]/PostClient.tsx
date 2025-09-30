@@ -82,12 +82,14 @@ export default function PostClient({ post }: { post: PostData }) {
           </p>
 
           <div className="prose prose-lg dark:prose-invert max-w-none mx-auto text-textLight prose-headings:text-secondary prose-a:text-accent prose-strong:text-white prose-blockquote:border-accent prose-code:bg-gray-900 prose-code:p-1 prose-code:rounded-md">
-            {/* Preprocess ++underline++ -> <u>..</u> and convert single newlines to hard breaks so saved posts show the same line breaks as the editor */}
+            {/* Preprocess __underline__ -> <u>..</u> and ||spoiler||, and use remark-breaks for line breaks */}
             {(() => {
               const processed = post.content
-                .replace(/\+\+(.+?)\+\+/g, '<u>$1</u>')
-                // explicit <br/> for single newlines so rehypeRaw will render them
-                .replace(/([^\n])\r?\n(?!\r?\n)/g, '$1<br/>\n');
+                .replace(/__((?:(?!__).)+)__/g, '<u>$1</u>')
+                .replace(/\|\|((?:(?!\|\|).)+)\|\|/g, '<span class="spoiler" tabIndex="0">$1</span>')
+                .replace(/\+\+([^\+]+)\+\+/g, '<span style="font-size: 1.25em; font-weight: bold;">$1</span>')
+                .replace(/\?\?([^\|]+)\|([^?]+)\?\?/g, '<span title="$2" style="text-decoration: underline dotted;">$1</span>')
+                .replace(/\n/g, '<br />');
               return <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{processed}</ReactMarkdown>;
             })()}
           </div>

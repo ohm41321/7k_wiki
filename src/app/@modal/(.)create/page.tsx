@@ -7,7 +7,6 @@ import { Modal } from '@/app/components/Modal';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import Toast from '@/app/components/Toast';
@@ -196,9 +195,17 @@ export default function CreatePostModal() {
                   onChange={(e) => setContent(e.target.value)}
                   onPaste={handlePaste}
                 />
-                <div className="max-w-none bg-gray-900 p-3 rounded-md text-white overflow-auto" style={{ maxHeight: 300 }}>
-                  {/* Support ++underline++ -> <u>underline</u> and allow inline HTML (sanitized) */}
-                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{(content && content.replace(/\+\+(.+?)\+\+/g, '<u>$1</u>')) || '*Preview will appear here*'}</ReactMarkdown>
+                <div className="prose prose-lg dark:prose-invert max-w-none bg-gray-900 p-3 rounded-md text-white overflow-auto" style={{ maxHeight: 300 }}>
+                  {/* Support __underline__ -> <u>underline</u> and ||spoiler|| -> <span class="spoiler">spoiler</span> and allow inline HTML (sanitized) */}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{
+                    (content && content
+                      .replace(/__((?:(?!__).)+)__/g, '<u>$1</u>')
+                      .replace(/\|\|((?:(?!\|\|).)+)\|\|/g, '<span class="spoiler" tabIndex="0">$1</span>')
+                      .replace(/\+\+([^\+]+)\+\+/g, '<span style="font-size: 1.25em; font-weight: bold;">$1</span>')
+                      .replace(/\?\?([^\|]+)\|([^?]+)\?\?/g, '<span title="$2" style="text-decoration: underline dotted;">$1</span>')
+                      .replace(/\n/g, '<br />')
+                    ) || '*Preview will appear here*'
+                  }</ReactMarkdown>
                 </div>
               </div>
             </div>
