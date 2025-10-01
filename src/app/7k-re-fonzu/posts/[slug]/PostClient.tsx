@@ -119,6 +119,7 @@ export default function PostClient({ post }: PostClientProps) {
                         alt={`${post.title} - Image ${index + 1}`}
                         fill
                         className="object-cover hover:opacity-90 transition-opacity"
+                        unoptimized={true}
                       />
                     </div>
                   ))}
@@ -137,6 +138,7 @@ export default function PostClient({ post }: PostClientProps) {
                         width={1920}
                         height={1080}
                         className="w-full h-auto rounded-lg shadow-lg"
+                        unoptimized={true}
                       />
                     </div>
                   ))}
