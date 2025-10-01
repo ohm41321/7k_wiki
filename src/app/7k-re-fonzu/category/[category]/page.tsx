@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getPosts } from '@/app/lib/posts';
 import Reveal from '@/app/components/Reveal';
+import banner from '@/pic/noname_feature.jpg';
 
 interface PostData {
   slug: string;
@@ -10,10 +11,15 @@ interface PostData {
   date: string;
   author: string;
   category: string;
+  tags: string[];
   imageUrls?: string[];
 }
 
-export default async function CategoryPage({ params }: { params: { category: string } }) {
+type PageProps = {
+  params: { category: string };
+};
+
+export default async function CategoryPage({ params }: PageProps) {
   const { category } = params;
   const allPosts: PostData[] = getPosts();
   const posts = allPosts.filter(post => post.category.toLowerCase() === category.toLowerCase());
@@ -39,7 +45,7 @@ export default async function CategoryPage({ params }: { params: { category: str
           {posts.map((post) => (
             <Reveal key={post.slug} className="block">
               <Link 
-                href={`/posts/${post.slug}`} 
+                href={`/7k-re-fonzu/posts/${post.slug}`} 
                 className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl group"
               >
                 <div className="relative w-full aspect-[16/9] overflow-hidden">
@@ -52,14 +58,18 @@ export default async function CategoryPage({ params }: { params: { category: str
                       className="transition-transform duration-500 group-hover:scale-110"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-                      <p className="text-gray-500">No Image</p>
-                    </div>
+                    <Image 
+                        src={banner} 
+                        alt="Default Post Image" 
+                        fill
+                        style={{ objectFit: 'cover' }} 
+                        className="transition-transform duration-500 group-hover:scale-110"
+                      />
                   )}
                 </div>
                 <div className="p-6">
                   {post.category && (
-                    <Link href={`/category/${post.category.toLowerCase()}`}>
+                    <Link href={`/7k-re-fonzu/category/${post.category.toLowerCase()}`}>
                       <span className="text-accent font-bold text-sm hover:underline">{post.category}</span>
                     </Link>
                   )}
