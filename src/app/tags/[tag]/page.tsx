@@ -16,13 +16,13 @@ interface PostData {
 }
 
 type PageProps = {
-  params: { tag: string };
+  params: Promise<{ tag: string }>;
 };
 
 export default async function TagPage({ params }: PageProps) {
   // HACK: The Next.js build environment (v15.5.4) seems to treat params as a Promise
   // in production builds, causing a type error. Awaiting it seems to be the workaround.
-  const { tag } = await (params as any);
+  const { tag } = await params;
   const allPosts: PostData[] = getPosts();
   const posts = allPosts.filter(post => post.tags.map(t => t.toLowerCase()).includes(tag.toLowerCase()));
 
