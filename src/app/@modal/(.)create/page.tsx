@@ -10,10 +10,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkBreaks from 'remark-breaks';
-import { transformForPreview } from '@/lib/markdown';
 import Toast from '@/app/components/Toast';
-
-// shared transforms are in src/lib/markdown.ts
 
 export default function CreatePostModal() {
   const { data: session, status } = useSession();
@@ -24,22 +21,19 @@ export default function CreatePostModal() {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // no-op: preview is produced via transformForPreview below
+  const [showToastMessage, setShowToastMessage] = useState<string | null>(null);
 
   // Auto-resize textarea
   useEffect(() => {
-    if (textareaRef.current) {
+    if (activeTab === 'write' && textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [content]);
+  }, [content, activeTab]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -47,12 +41,33 @@ export default function CreatePostModal() {
     }
   }, [status, router]);
 
+  const uploadAndInsertImage = async (file: File) => {
+    const placeholder = `\n![Uploading ${file.name}...]()\n`;
+    setContent(prev => prev + placeholder);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(`Upload failed with status: ${res.status}`);
+      const data = await res.json();
+      const imageUrl = data.imageUrl;
+
+      if (!imageUrl) throw new Error('Invalid response from upload API');
+
+      setContent(prev => prev.replace(placeholder, `\n![${file.name}](${imageUrl})\n`));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setContent(prev => prev.replace(placeholder, `\n[Error uploading image: ${errorMessage}]\n`));
+      setError(errorMessage);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setSelectedFiles(prev => [...prev, ...files]);
-      const newPreviews = files.map(file => URL.createObjectURL(file));
-      setImagePreviews(prev => [...prev, ...newPreviews]);
+      for (const file of Array.from(e.target.files)) {
+        uploadAndInsertImage(file);
+      }
     }
   };
 
@@ -62,32 +77,13 @@ export default function CreatePostModal() {
       if (items[i].type.indexOf('image') !== -1) {
         const file = items[i].getAsFile();
         if (file) {
-          setSelectedFiles(prev => [...prev, file]);
-          setImagePreviews(prev => [...prev, URL.createObjectURL(file)]);
+          e.preventDefault();
+          uploadAndInsertImage(file);
+          break;
         }
-        e.preventDefault();
-        break;
       }
     }
   };
-
-  const handleRemoveImage = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-    setImagePreviews(prev => {
-      const url = prev[index];
-  try { URL.revokeObjectURL(url); } catch { }
-      return prev.filter((_, i) => i !== index);
-    });
-  };
-
-  // Revoke object URLs on unmount to avoid memory leaks
-  useEffect(() => {
-    return () => {
-      imagePreviews.forEach(url => {
-    try { URL.revokeObjectURL(url); } catch { }
-      });
-    };
-  }, [imagePreviews]);
 
   const onEmojiClick = (emojiData: EmojiClickData) => {
     setContent(prev => prev + emojiData.emoji);
@@ -105,30 +101,10 @@ export default function CreatePostModal() {
     const newContent = content.substring(0, start) + newText + content.substring(end);
     setContent(newContent);
 
-    // Focus and select the placeholder text
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + before.length, start + before.length + (selectedText.length || 'text'.length));
     }, 0);
-  };
-
-  const handleImageUploads = async (): Promise<string[]> => {
-    if (selectedFiles.length === 0) return [];
-    
-    const uploadedUrls: string[] = [];
-    for (const file of selectedFiles) {
-      const formData = new FormData();
-      formData.append('file', file);
-      try {
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        if (!res.ok) throw new Error(`Failed to upload image: ${file.name}`);
-        const data = await res.json();
-        uploadedUrls.push(data.imageUrl);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : String(err));
-      }
-    }
-    return uploadedUrls;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -137,20 +113,14 @@ export default function CreatePostModal() {
       setError('Title is required.');
       return;
     }
-    if (!content.trim() && selectedFiles.length === 0) {
-      setError('Post must have content or an image.');
+    if (!content.trim()) {
+      setError('Post must have content.');
       return;
     }
     setLoading(true);
     setError(null);
 
-    const imageUrls = await handleImageUploads();
-    if (selectedFiles.length > 0 && imageUrls.length === 0) {
-      setLoading(false);
-      setError('Image upload failed. Please try again.');
-      return;
-    }
-
+    const imageUrls = content.match(/!\\[.*?\\]\((https?:\/\/[^\s]+)\)/g)?.map(md => md.match(/!\\[.*?\\]\((https?:\/\/[^\s]+)\)/)![1]) || [];
     const author = session?.user?.name || 'Anonymous';
 
     try {
@@ -161,18 +131,12 @@ export default function CreatePostModal() {
       });
 
       if (!res.ok) throw new Error('Failed to create post');
-      // show a success toast so the user sees it, then navigate back after a short delay
+      
       setShowToastMessage('Post created successfully!');
-      // clear inputs quickly
       setTitle('');
       setContent('');
       setTags('');
-      setSelectedFiles([]);
-      setImagePreviews(prev => {
-  prev.forEach(url => { try { URL.revokeObjectURL(url); } catch { } });
-        return [];
-      });
-      // allow toast to be visible briefly
+      
       await new Promise(resolve => setTimeout(resolve, 900));
       router.refresh();
       router.back();
@@ -182,8 +146,6 @@ export default function CreatePostModal() {
       setLoading(false);
     }
   };
-
-  const [showToastMessage, setShowToastMessage] = useState<string | null>(null);
   
   if (status === 'loading') {
     return <Modal><div className="text-center">Loading...</div></Modal>;
@@ -196,7 +158,6 @@ export default function CreatePostModal() {
   return (
     <Modal>
       <div className="flex">
-        {/* Main Content Area */}
         <div className="flex-grow transition-all duration-300 ease-in-out">
           {showToastMessage && (
             <Toast message={showToastMessage} onClose={() => setShowToastMessage(null)} />
@@ -267,33 +228,14 @@ export default function CreatePostModal() {
                         </div>
                       ) : (
                         <div className="prose prose-lg dark:prose-invert max-w-none bg-gray-900 p-3 rounded-md text-white overflow-auto" style={{ minHeight: 300 }}>
-                          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{
-                            content || '*Preview will appear here*'
-                          }</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{content || '*Preview will appear here*'}</ReactMarkdown>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
                 
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative aspect-square overflow-hidden rounded-md bg-gray-800">
-                      <img src={preview} alt={`Image Preview ${index + 1}`} className="w-full h-full object-cover" />
-                      <button 
-                        type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1 text-white hover:bg-opacity-75"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-700">
                   <div className="flex items-center space-x-1">
                     <label htmlFor="image-upload" className="cursor-pointer text-white hover:text-accent p-2 rounded-full">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -341,7 +283,6 @@ export default function CreatePostModal() {
                 </div>
                 {showEmojiPicker && (
                   <div className="mt-2">
-                    {/* Leave out theme prop to avoid typing mismatch in this project's typings */}
                     <EmojiPicker onEmojiClick={onEmojiClick} width="100%" />
                   </div>
                 )}
@@ -376,5 +317,3 @@ export default function CreatePostModal() {
     </Modal>
   );
 }
-
-// transforms live in src/lib/markdown.ts
