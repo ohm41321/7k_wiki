@@ -3,8 +3,12 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getPostBySlug } from "@/app/lib/posts";
 import EditPostForm from "@/app/components/EditPostForm";
 
-export default async function EditPostPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+type PageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+export default async function EditPostPage({ params }: PageProps) {
+  const { slug } = await params;
   const session = await getServerSession(authOptions);
   const post = getPostBySlug(slug);
 
