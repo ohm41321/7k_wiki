@@ -8,8 +8,9 @@ import path from 'path';
 const postsDirectory = path.join(process.cwd(), 'posts');
 
 // GET a single post
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
-  const post = getPostBySlug(params.slug);
+export async function GET(request: Request, context: { params: { slug: string } }) {
+  const slug = context.params.slug;
+  const post = getPostBySlug(slug);
   if (!post) {
     return NextResponse.json({ message: 'Post not found' }, { status: 404 });
   }
@@ -17,13 +18,14 @@ export async function GET(request: Request, { params }: { params: { slug: string
 }
 
 // DELETE a single post
-export async function DELETE(request: Request, { params }: { params: { slug: string } }) {
+export async function DELETE(request: Request, context: { params: { slug: string } }) {
+  const slug = context.params.slug;
   const session = await getServerSession(authOptions);
   if (!session?.user?.name) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const post = getPostBySlug(params.slug);
+  const post = getPostBySlug(slug);
   if (!post) {
     return NextResponse.json({ message: 'Post not found' }, { status: 404 });
   }
@@ -33,7 +35,7 @@ export async function DELETE(request: Request, { params }: { params: { slug: str
   }
 
   try {
-    const filePath = path.join(postsDirectory, `${params.slug}.md`);
+    const filePath = path.join(postsDirectory, `${slug}.md`);
     fs.unlinkSync(filePath);
     return NextResponse.json({ message: 'Post deleted successfully' }, { status: 200 });
   } catch (error) {
@@ -42,13 +44,14 @@ export async function DELETE(request: Request, { params }: { params: { slug: str
 }
 
 // UPDATE a single post
-export async function PUT(request: Request, { params }: { params: { slug: string } }) {
+export async function PUT(request: Request, context: { params: { slug: string } }) {
+    const slug = context.params.slug;
     const session = await getServerSession(authOptions);
     if (!session?.user?.name) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const post = getPostBySlug(params.slug);
+    const post = getPostBySlug(slug);
     if (!post) {
         return NextResponse.json({ message: 'Post not found' }, { status: 404 });
     }
@@ -63,7 +66,7 @@ export async function PUT(request: Request, { params }: { params: { slug: string
             return NextResponse.json({ message: 'Title and content are required' }, { status: 400 });
         }
 
-        const result = updatePost({ slug: params.slug, title, content, tags });
+        const result = updatePost({ slug: slug, title, content, tags });
 
         if (!result.success) {
             return NextResponse.json({ message: 'Error updating post', error: result.error }, { status: 500 });
