@@ -13,6 +13,7 @@
     "@types/marked": "^5.0.2",
     "autoprefixer": "^10",
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.2.0",
     "emoji-picker-react": "^4.13.3",
     "framer-motion": "^12.23.22",
     "gray-matter": "^4.0.3",

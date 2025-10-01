@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid'; // For generating unique filenames
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary using environment variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(request: Request) {
   try {
@@ -13,23 +18,34 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const fileExtension = path.extname(file.name);
-    const uniqueFilename = `${uuidv4()}${fileExtension}`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    const filePath = path.join(uploadDir, uniqueFilename);
 
-    // Ensure the upload directory exists
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    // Use a promise to handle the Cloudinary upload stream
+    const imageUrl = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          // Optional: specify a folder in Cloudinary
+          folder: '7k_wiki_uploads',
+        },
+        (error, result) => {
+          if (error) {
+            return reject(error);
+          }
+          if (result) {
+            resolve(result.secure_url);
+          } else {
+            reject(new Error('Cloudinary upload failed without an explicit error.'));
+          }
+        }
+      );
 
-    fs.writeFileSync(filePath, buffer);
+      // Pipe the buffer into the upload stream
+      uploadStream.end(buffer);
+    });
 
-    const relativeUrl = `/uploads/${uniqueFilename}`;
-    const absoluteUrl = `http://localhost:3000${relativeUrl}`;
+    return NextResponse.json({ imageUrl }, { status: 201 });
 
-    return NextResponse.json({ imageUrl: absoluteUrl }, { status: 201 });
   } catch (error: any) {
+    console.error("Upload API Error:", error);
     return new NextResponse(JSON.stringify({ message: error.message || 'Internal Server Error' }), { status: 500 });
   }
 }
