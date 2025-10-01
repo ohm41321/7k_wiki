@@ -12,13 +12,12 @@ export default function FonzuHub() {
         <FonzuHubBackground />
         <div className="z-10 px-4">
           <Reveal replay={true}>
-            <h1 className="text-6xl md:text-8xl font-black mb-4">
-              <span className="font-tangerine text-orange-400 text-9xl">Fonzu</span>
-              <span className="font-orbitron text-blue-400">:Hub</span>
+            <h1 className="text-6xl md:text-8xl font-black mb-4 font-orbitron">
+              <span className="text-orange-400">Fonzu</span> <span className="text-blue-400">Wiki</span>
             </h1>
           </Reveal>
           <Reveal replay={true}>
-            <p className="text-xl md:text-2xl text-textLight fade-in mt-2">ศูนย์รวมข่าวสาร ไกด์ และข้อมูลเกมต่างๆ</p>
+            <p className="text-xl md:text-2xl text-textLight fade-in mt-2">สารานุกรมข่าวสาร ไกด์ และข้อมูลเกมกาชา</p>
           </Reveal>
         </div>
       </div>

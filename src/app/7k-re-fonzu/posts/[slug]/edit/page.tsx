@@ -3,7 +3,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getPostBySlug } from "@/app/lib/posts";
 import EditPostForm from "@/app/components/EditPostForm";
 
-export default async function EditPostPage({ params: { slug } }: { params: { slug: string } }) {
+export default async function EditPostPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
   const session = await getServerSession(authOptions);
   const post = getPostBySlug(slug);
 
@@ -18,7 +19,7 @@ export default async function EditPostPage({ params: { slug } }: { params: { slu
   }
 
   // Authorization check
-  if (!session || session.user?.name !== post.author) {
+  if (!session || session.user?.name?.toLowerCase() !== post.author?.toLowerCase()) {
     return (
       <main className="max-w-4xl mx-auto px-4 py-8 text-white">
         <div className="text-center">

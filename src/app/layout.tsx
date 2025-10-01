@@ -10,8 +10,8 @@ const orbitron = Orbitron({ subsets: ["latin"], weight: ["400", "700", "900"], v
 const tangerine = Tangerine({ subsets: ["latin"], weight: ["400", "700"], variable: '--font-tangerine' });
 
 export const metadata: Metadata = {
-  title: "Fonzu:Hub - Game Hub",
-  description: "A hub for game news, guides, and information.",
+  title: "Fonzu Wiki",
+  description: "A wiki for gacha game news, guides, and information.",
 };
 
 export default function RootLayout({

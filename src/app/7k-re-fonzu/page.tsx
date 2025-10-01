@@ -12,6 +12,7 @@ interface PostData {
   date: string;
   author: string;
   category: string;
+  tags: string[];
   imageUrls?: string[];
 }
 
@@ -31,7 +32,7 @@ export default async function SevenKnightsPage() {
   return (
     <div className="text-textLight">
       {/* Hero Section */}
-      <div className="relative h-[65vh] min-h-[500px] flex items-center justify-center text-center overflow-hidden">
+      <div className="relative h-[65vh] min-h-[500px] flex items-center justify-center text-center overflow-hidden mb-12">
         <HeroBackground />
         <div className="z-10 px-4">
           <Reveal replay={true}>
@@ -40,10 +41,10 @@ export default async function SevenKnightsPage() {
             </div>
           </Reveal>
           <Reveal replay={true}>
-            <h1 className="text-5xl md:text-7xl font-extrabold text-yellow-400 drop-shadow-lg mb-4 typing inline-block">7KRe:Hub</h1>
+            <h1 className="text-5xl md:text-7xl font-extrabold text-yellow-400 drop-shadow-lg mb-4 typing inline-block p-4">Seven Knights Re:Birth</h1>
           </Reveal>
           <Reveal replay={true}>
-            <p className="text-lg md:text-xl text-textLight fade-in mt-2">by Fonzu – คลังไกด์อัศวินแห่ง Rebirth</p>
+            <p className="text-lg md:text-xl text-textLight fade-in mt-2">สารานุกรมเกมกาชา โดย Fonzu</p>
           </Reveal>
         </div>
 
@@ -52,8 +53,8 @@ export default async function SevenKnightsPage() {
       {/* Main Content */}
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-secondary mb-2">ห้องสมุด - Seven Knights Re:birth</h2>
-          <p>อัปเดตข่าวสาร ไกด์ และเคล็ดลับจากจารย์ปิง! <span className="text-primary">Powered by React</span></p>
+          <h2 className="text-4xl font-bold text-secondary mb-2">อัปเดตข่าวสาร ไกด์ และเคล็ดลับจากจารย์ปิง!</h2>
+          <p>อัปเดตข่าวสาร ไกด์ และเคล็ดลับจากจารย์ปิง!</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -71,9 +72,13 @@ export default async function SevenKnightsPage() {
                         className="transition-transform duration-500 group-hover:scale-110"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-                        <p className="text-gray-500">No Image</p>
-                      </div>
+                      <Image 
+                        src={banner} 
+                        alt="Default Post Image" 
+                        fill
+                        style={{ objectFit: 'cover' }} 
+                        className="transition-transform duration-500 group-hover:scale-110"
+                      />
                     )}
                   </div>
                 </Link>
@@ -86,6 +91,15 @@ export default async function SevenKnightsPage() {
                   <Link href={`/7k-re-fonzu/posts/${post.slug}`}>
                     <h3 className="mb-2 mt-1 text-xl font-bold tracking-tight text-secondary group-hover:text-accent transition-colors">{post.title}</h3>
                   </Link>
+
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {post.tags?.map((tag) => (
+                      <Link href={`/tags/${tag.toLowerCase()}`} key={tag} className="text-xs bg-gray-700 text-textLight px-2 py-1 rounded-md hover:bg-gray-600 transition-colors">
+                        #{tag}
+                      </Link>
+                    ))}
+                  </div>
+
                   <p className="font-normal text-textLight text-sm" suppressHydrationWarning>
                     By {post.author} on {formatDateThai(post.date)} เวลา {formatTimeThai(post.date)}
                   </p>

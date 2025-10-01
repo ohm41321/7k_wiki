@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import Search from './Search';
 
 const Navbar = () => {
+  const pathname = usePathname();
   const { data: session, status } = useSession();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -44,8 +46,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <Link href="/" className="text-secondary font-bold text-2xl hover:text-accent transition-colors">
-              Fonzu:Hub <br/>
-              <h1 className="text-xs">by Fonzu</h1>
+              Fonzu Wiki
             </Link>
           </div>
           {/* Desktop Menu */}
@@ -54,7 +55,7 @@ const Navbar = () => {
             <Link href="/" className="text-textLight hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Home
             </Link>
-            {status === 'authenticated' && (
+            {status === 'authenticated' && pathname.startsWith('/7k-re-fonzu') && (
               <Link href="/create" className="text-textLight hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 Create Post
               </Link>
@@ -115,7 +116,7 @@ const Navbar = () => {
             <Link href="/" className="text-textLight hover:text-yellow-300 block px-3 py-2 rounded-md text-base font-medium transition-colors">
               Home
             </Link>
-            {status === 'authenticated' && (
+            {status === 'authenticated' && pathname.startsWith('/7k-re-fonzu') && (
               <Link href="/create" className="text-textLight hover:text-yellow-300 block px-3 py-2 rounded-md text-base font-medium transition-colors">
                 Create Post
               </Link>
