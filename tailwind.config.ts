@@ -15,6 +15,11 @@ const config: Config = {
         textLight: '#e0e0e0',    // Light gray for text
         textDark: '#111111',      // Dark text for light backgrounds
       },
+      fontFamily: {
+        sans: ['var(--font-inter)', 'sans-serif'],
+        orbitron: ['var(--font-orbitron)', 'sans-serif'],
+        tangerine: ['var(--font-tangerine)', 'cursive'],
+      },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic':

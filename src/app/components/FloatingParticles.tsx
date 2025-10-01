@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactElement } from 'react';
 
 const FloatingParticles = () => {
-  const [particles, setParticles] = useState<JSX.Element[]>([]);
-  const particleCount = 50;
+  const [particles, setParticles] = useState<ReactElement[]>([]);
+  const particleCount = 150;
 
   useEffect(() => {
     const newParticles = [];
     for (let i = 0; i < particleCount; i++) {
-      const size = Math.random() * 3 + 1;
+      const size = Math.random() * 6 + 1;
       const left = Math.random() * 100;
       const animationDelay = Math.random() * 20;
       const animationDuration = Math.random() * 10 + 10;

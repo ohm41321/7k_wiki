@@ -19,18 +19,10 @@ export function Modal({ children }: Props) {
     dialogRef.current?.showModal();
   }, []);
 
-  // Close modal on background click
-  const handleClick = (e: React.MouseEvent<HTMLDialogElement, MouseEvent>) => {
-    if (e.target === dialogRef.current) {
-      closeModal();
-    }
-  };
-
   return (
     <dialog 
       ref={dialogRef} 
       onClose={closeModal}
-      onClick={handleClick}
       className="bg-black text-textLight p-0 rounded-lg shadow-2xl w-full max-w-4xl backdrop:bg-black backdrop:opacity-50 m-auto"
     >
       <div className="relative p-6">

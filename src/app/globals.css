@@ -2,17 +2,17 @@
 
 @keyframes rise {
   0% {
-    transform: translateY(100%);
+    transform: translateY(0);
     opacity: 0;
   }
   10% {
-    opacity: 1;
+    opacity: 0.7;
   }
   90% {
-    opacity: 1;
+    opacity: 0.7;
   }
   100% {
-    transform: translateY(-100%);
+    transform: translateY(-100vh);
     opacity: 0;
   }
 }
@@ -22,12 +22,7 @@
   border-radius: 50%;
   background: #c89b3c; /* Accent color */
   animation: rise 20s infinite;
-}
-
-.post-content img {
-  width: auto;
-  height: auto;
-  max-width: 100%;
+  box-shadow: 0 0 8px #c89b3c, 0 0 12px #f0b90b; /* Glow effect */
 }
 
 html,
@@ -138,4 +133,104 @@ body {
 .spoiler:focus {
   background-color: transparent;
   color: inherit;
+}
+
+/* Custom Header Sizes for Markdown */
+.prose h1 {
+  font-size: 2.25rem; /* 36px */
+  font-weight: 800;
+}
+.prose h2 {
+  font-size: 1.875rem; /* 30px */
+  font-weight: 700;
+}
+.prose h3 {
+  font-size: 1.5rem; /* 24px */
+  font-weight: 600;
+}
+
+/* Restore list markers and spacing inside .prose (Tailwind reset removes markers globally) */
+.prose ul,
+.prose ol {
+  list-style-position: outside;
+  padding-left: 1.25rem; /* keep some left padding for markers */
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.prose ul {
+  list-style-type: disc;
+}
+.prose ol {
+  list-style-type: decimal;
+}
+.prose li {
+  margin-top: 0.25rem;
+}
+
+/* Keep default <br> behavior (inline) so list markers stay aligned; spacing handled on paragraphs */
+/* (Removed block display for .prose br to avoid bullets separating from list text) */
+
+/* Improve paragraph spacing inside .prose so blank lines feel like real paragraphs */
+.prose p {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  line-height: 1.9;
+  /* preserve single newlines inside paragraphs (user-entered line breaks) */
+  white-space: pre-line;
+}
+
+/* Keep normal white-space in list items so markers align and wrapping behaves as expected */
+
+/* Style Markdown links to be blue */
+.prose a {
+  color: #3b82f6; /* blue-500 */
+}
+.prose a:hover {
+  color: #60a5fa; /* blue-400 */
+}
+
+/* --- New Geometric Particle Styles --- */
+
+@keyframes float {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.7;
+  }
+  90% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.geometric-particle {
+  position: absolute;
+  animation: float 20s infinite linear;
+  opacity: 0;
+}
+
+.geometric-particle.square {
+  background-color: rgba(59, 130, 246, 0.3); /* blue-500 with opacity */
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5), 0 0 12px rgba(96, 165, 250, 0.5); /* blue glow */
+}
+
+.geometric-particle.triangle {
+  background-color: transparent;
+  border-style: solid;
+  border-width: 0 10px 17.3px 10px;
+  border-color: transparent transparent rgba(139, 92, 246, 0.3) transparent; /* violet-500 with opacity */
+  width: 0;
+  height: 0;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+}
+
+.geometric-particle.circle {
+  border-radius: 50%;
+  background-color: rgba(236, 72, 153, 0.3); /* pink-500 with opacity */
+  box-shadow: 0 0 8px rgba(236, 72, 153, 0.5), 0 0 12px rgba(244, 114, 182, 0.5); /* pink glow */
 }

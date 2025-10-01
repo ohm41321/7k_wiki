@@ -30,15 +30,15 @@ const writeComments = (comments: Comment[]) => {
   fs.writeFileSync(commentsFilePath, JSON.stringify(comments, null, 2));
 };
 
-export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
-  const { slug } = params;
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const comments = readComments();
   const postComments = comments.filter((comment) => comment.slug === slug);
   return NextResponse.json(postComments);
 }
 
-export async function POST(request: NextRequest, { params }: { params: { slug: string } }) {
-  const { slug } = params;
+export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const { content, author } = await request.json();
 
   if (!content || !author) {

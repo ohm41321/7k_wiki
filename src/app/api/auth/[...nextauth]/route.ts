@@ -1,67 +1,58 @@
-import NextAuth from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { usersDB } from "@/app/lib/users";
+import NextAuth, { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { usersDB } from '@/app/lib/users';
 import bcrypt from 'bcryptjs';
 
-// WARNING: This is a mock authentication setup for demonstration purposes.
-// Do NOT use this in a production environment.
-// Passwords are not hashed and are stored in-memory.
-
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        username: { label: "Username or Email", type: "text", placeholder: "YourUsername or test@example.com" },
-        password: {  label: "Password", type: "password", placeholder: "password" }
+        login: { label: 'Username or Email', type: 'text' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials) {
           return null;
         }
-        
-        // Find user by email or username
-        let user = usersDB.findByEmail(credentials.username);
+
+        // Try to find user by email first, then by username
+        let user = usersDB.findByEmail(credentials.login);
         if (!user) {
-          user = usersDB.findByUsername(credentials.username);
+          user = usersDB.findByUsername(credentials.login);
         }
 
-        // compare hashed password
         if (user && user.password && bcrypt.compareSync(credentials.password, user.password)) {
           return { id: user.id, name: user.name, email: user.email };
         } else {
           return null;
         }
-      }
-    })
+      },
+    }),
   ],
-  pages: {
-    signIn: '/login',
-  },
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    strategy: 'jwt',
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // token is a Record in runtime; narrow to allow adding id
-        const t = token as unknown as Record<string, unknown>;
-        t.id = user.id;
-        return t as typeof token;
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        const t = token as unknown as Record<string, unknown>;
-        if (typeof t.id === 'string') {
-          (session.user as Record<string, unknown>).id = t.id;
-        }
+        session.user.id = token.id as string;
       }
       return session;
     },
   },
-});
+  pages: {
+    signIn: '/login',
+  },
+};
 
-export { handler as GET, handler as POST }
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };

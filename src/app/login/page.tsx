@@ -5,7 +5,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function LoginPage() {
 
     const result = await signIn('credentials', {
       redirect: false,
-      username,
+      login,
       password,
     });
 
@@ -36,8 +36,8 @@ export default function LoginPage() {
             <label className="block mb-2 text-sm font-medium text-textLight">Username or Email</label>
             <input
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
               required
               className="w-full px-3 py-2 text-black bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
             />
