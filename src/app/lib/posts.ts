@@ -92,7 +92,7 @@ export function createPost({ title, author, content, imageUrls, tags, game }: Po
     author,
     game, // Save game to frontmatter
     imageUrls: imageUrls || [],
-    tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
+    tags: (tags || '').split(',').map(tag => tag.trim()).filter(Boolean),
   };
 
   const fileContent = matter.stringify(content || '', frontmatterData);
