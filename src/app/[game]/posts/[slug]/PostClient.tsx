@@ -157,12 +157,14 @@ export default function PostClient({ post }: PostClientProps) {
               {transformForPreview(post.content)}
             </ReactMarkdown>
           </div>
-        </article>
+                </article>
 
         <hr className="border-gray-700 my-12" />
 
         <CommentList slug={post.slug} />
         <CommentForm slug={post.slug} />
+
+
       </main>
 
       {lightbox && (

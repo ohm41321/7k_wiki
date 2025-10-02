@@ -8,7 +8,15 @@ import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import rehypeSanitize from 'rehype-sanitize';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+
+const customSchema = {
+  ...defaultSchema,
+  protocols: {
+    ...defaultSchema.protocols,
+    src: [...(defaultSchema.protocols?.src || []), 'blob', 'data'],
+  },
+};
 import remarkBreaks from 'remark-breaks';
 import { toast } from 'sonner';
 
@@ -45,7 +53,7 @@ export default function CreatePostModal() {
   const stageImageForUpload = (file: File) => {
     const blobUrl = URL.createObjectURL(file);
     const placeholder = `
-![Uploading ${file.name}...}](${blobUrl})
+![Uploading ${file.name}...](${blobUrl})
 `;
     setContent(prev => prev + placeholder);
     setStagedFiles(prev => new Map(prev).set(blobUrl, file));
@@ -243,7 +251,7 @@ export default function CreatePostModal() {
                         </div>
                       ) : (
                         <div className="prose prose-lg dark:prose-invert max-w-none bg-gray-900 p-3 rounded-md text-white overflow-auto" style={{ minHeight: 300 }}>
-                          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{content || '*Preview will appear here*'}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw, [rehypeSanitize, customSchema]]}>{content || '*Preview will appear here*'}</ReactMarkdown>
                         </div>
                       )}
                     </div>

@@ -6,9 +6,18 @@ import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkBreaks from 'remark-breaks';
 import { toast } from 'sonner';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
+
+const customSchema = {
+  ...defaultSchema,
+  protocols: {
+    ...defaultSchema.protocols,
+    src: [...(defaultSchema.protocols?.src || []), 'blob', 'data'],
+  },
+};
 
 interface EditPostFormProps {
   post: {
@@ -51,7 +60,7 @@ export default function EditPostForm({ post }: EditPostFormProps) {
 
   const stageImageForUpload = (file: File) => {
     const blobUrl = URL.createObjectURL(file);
-    const placeholder = `\n![Uploading ${file.name}...}(${blobUrl})\n`;
+    const placeholder = `\n![Uploading ${file.name}...](${blobUrl})\n`;
     setContent(prev => prev + placeholder);
     setStagedFiles(prev => new Map(prev).set(blobUrl, file));
   };
@@ -255,7 +264,7 @@ export default function EditPostForm({ post }: EditPostFormProps) {
                         </div>
                       ) : (
                       <div className="prose prose-lg dark:prose-invert max-w-none bg-gray-800 p-3 rounded-md text-white overflow-auto" style={{ minHeight: 360 }}>
-                          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>{content || '*Preview will appear here*'}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw, [rehypeSanitize, customSchema]]}>{content || '*Preview will appear here*'}</ReactMarkdown>
                       </div>
                       )}
                   </div>
