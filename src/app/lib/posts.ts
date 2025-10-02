@@ -120,7 +120,7 @@ export function updatePost({ slug, title, content, tags, game }: UpdatePostData)
         const fileContents = fs.readFileSync(fullPath, 'utf8');
         const { data: originalData } = matter(fileContents);
 
-        const updatedData = {
+        const updatedData: { [key: string]: any } = {
             ...originalData,
             title,
             tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),

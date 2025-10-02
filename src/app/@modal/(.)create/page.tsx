@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Modal } from '@/app/components/Modal';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -273,7 +273,7 @@ export default function CreatePostModal() {
                 </div>
                 {showEmojiPicker && (
                   <div className="mt-2">
-                    <EmojiPicker onEmojiClick={onEmojiClick} width="100%" theme="dark" />
+                    <EmojiPicker onEmojiClick={onEmojiClick} width="100%" theme={Theme.DARK} />
                   </div>
                 )}
               </form>

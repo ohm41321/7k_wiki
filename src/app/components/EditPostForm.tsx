@@ -8,7 +8,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import remarkBreaks from 'remark-breaks';
 import { toast } from 'sonner';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 
 interface EditPostFormProps {
   post: {
@@ -302,7 +302,7 @@ export default function EditPostForm({ post }: EditPostFormProps) {
               </div>
               {showEmojiPicker && (
                 <div className="mt-2">
-                  <EmojiPicker onEmojiClick={onEmojiClick} width="100%" theme="dark" />
+                  <EmojiPicker onEmojiClick={onEmojiClick} width="100%" theme={Theme.DARK} />
                 </div>
               )}
           </form>
