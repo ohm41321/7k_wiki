@@ -1,97 +1,146 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
+import p5 from 'p5';
 
-const RisingLightStreaks = () => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+// A simplified P5 type interface for our use case
+interface P5 extends p5 {}
 
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+class Particle {
+  p: P5;
+  x: number;
+  y: number;
+  speed: number;
+  len: number;
+  size: number;
+  color: any;
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+  constructor(p: P5) {
+    this.p = p;
+    this.x = p.random(p.width);
+    this.y = p.random(p.height);
+    this.speed = p.random(0.5, 1.2);
+    this.len = p.random(12, 30);
+    this.size = p.random(1.5, 3);
+    // Changed color palette to white and orange tones
+    this.color = p.random([
+      p.color(255, 255, 255, 80), // White
+      p.color(255, 165, 0, 70),   // Orange
+      p.color(255, 200, 100, 75)  // Light Orange
+    ]);
+  }
 
-        let animationFrameId: number;
-        let particles: any[] = [];
-        const particleCount = 100; // Increased particle count
+  update() {
+    this.y -= this.speed;
+    if (this.y < -this.len) {
+      this.y = this.p.height;
+      this.x = this.p.random(this.p.width);
+    }
+  }
 
-        const resizeCanvas = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
+  draw() {
+    const p = this.p;
+    p.stroke(this.color);
+    p.strokeWeight(this.size);
+    p.line(this.x, this.y, this.x, this.y + this.len);
+  }
+}
 
-        const createParticles = () => {
-            particles = [];
-            for (let i = 0; i < particleCount; i++) {
-                const width = Math.random() * 2.5 + 1; // Wider streaks
-                particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height + canvas.height, // Start below the screen
-                    speed: width * 0.7, // Speed proportional to width for parallax
-                    length: Math.random() * 200 + 100, // Longer streaks
-                    opacity: Math.random() * 0.6 + 0.2, // Brighter
-                    width: width,
-                });
-            }
-        };
+class Star {
+  p: P5;
+  x: number;
+  y: number;
+  size: number;
+  twinkleOffset: number;
 
-        const animate = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+  constructor(p: P5) {
+    this.p = p;
+    this.x = p.random(p.width);
+    this.y = p.random(p.height);
+    this.size = p.random(0.5, 1.5);
+    this.twinkleOffset = p.random(p.TWO_PI);
+  }
 
-            particles.forEach(p => {
-                p.y -= p.speed;
+  draw() {
+    const p = this.p;
+    // Use a sine wave for a smooth twinkling effect
+    const alpha = p.map(p.sin(p.frameCount * 0.02 + this.twinkleOffset), -1, 1, 50, 180);
+    p.noStroke();
+    p.fill(255, 255, 255, alpha); // Soft white color
+    p.ellipse(this.x, this.y, this.size, this.size);
+  }
+}
 
-                if (p.y < -p.length) {
-                    p.y = canvas.height;
-                    p.x = Math.random() * canvas.width;
-                }
+const SketchComponent: React.FC = () => {
+  const sketchRef = useRef<HTMLDivElement>(null);
 
-                // Main streak gradient
-                const gradient = ctx.createLinearGradient(p.x, p.y, p.x, p.y - p.length);
-                gradient.addColorStop(0, `rgba(255, 236, 179, 0)`);
-                gradient.addColorStop(0.5, `rgba(255, 236, 179, ${p.opacity})`);
-                gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+  useEffect(() => {
+    let particles: Particle[] = [];
+    let stars: Star[] = [];
+    const particleDensity = 0.00004;
+    const starDensity = 0.0001;
 
-                ctx.beginPath();
-                ctx.strokeStyle = gradient;
-                ctx.lineWidth = p.width;
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p.x, p.y - p.length);
-                ctx.stroke();
+    const sketch = (p: P5) => {
+      p.setup = () => {
+        if (sketchRef.current) {
+          const canvas = p.createCanvas(sketchRef.current.offsetWidth, sketchRef.current.offsetHeight);
+          canvas.parent(sketchRef.current);
+          
+          // Initialize particles (streaks)
+          const numParticles = p.width * p.height * particleDensity;
+          for (let i = 0; i < numParticles; i++) {
+            particles.push(new Particle(p));
+          }
 
-                // Add a sparkling head to the streak
-                const headY = p.y - p.length;
-                const headGradient = ctx.createRadialGradient(p.x, headY, 0, p.x, headY, p.width * 4);
-                headGradient.addColorStop(0, `rgba(255, 255, 255, ${p.opacity * 1.5})`);
-                headGradient.addColorStop(1, `rgba(255, 236, 179, 0)`);
+          // Initialize stars
+          const numStars = p.width * p.height * starDensity;
+          for (let i = 0; i < numStars; i++) {
+            stars.push(new Star(p));
+          }
+        }
+      };
 
-                ctx.beginPath();
-                ctx.fillStyle = headGradient;
-                ctx.arc(p.x, headY, p.width * 2, 0, Math.PI * 2);
-                ctx.fill();
-            });
+      p.draw = () => {
+        p.background(0, 0, 0, 40);
+        
+        // Draw stars first, so they are in the background
+        stars.forEach(star => {
+          star.draw();
+        });
 
-            animationFrameId = window.requestAnimationFrame(animate);
-        };
+        // Draw particles (streaks) on top
+        particles.forEach(particle => {
+          particle.update();
+          particle.draw();
+        });
+      };
 
-        const init = () => {
-            resizeCanvas();
-            createParticles();
-            animate();
-        };
+      p.windowResized = () => {
+        if (sketchRef.current) {
+          p.resizeCanvas(sketchRef.current.offsetWidth, sketchRef.current.offsetHeight);
+          particles = [];
+          stars = [];
+          
+          const numParticles = p.width * p.height * particleDensity;
+          for (let i = 0; i < numParticles; i++) {
+            particles.push(new Particle(p));
+          }
 
-        init();
+          const numStars = p.width * p.height * starDensity;
+          for (let i = 0; i < numStars; i++) {
+            stars.push(new Star(p));
+          }
+        }
+      };
+    };
 
-        window.addEventListener('resize', init);
+    new p5(sketch);
 
-        return () => {
-            window.cancelAnimationFrame(animationFrameId);
-            window.removeEventListener('resize', init);
-        };
-    }, []);
+  }, []);
 
-    return <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full" />;
+  return <div ref={sketchRef} className="absolute inset-0 -z-10" />;
 };
 
-export default RisingLightStreaks;
+export default function RisingLightStreaks() {
+  return <SketchComponent />;
+}
