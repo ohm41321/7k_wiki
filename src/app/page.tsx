@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Reveal from '@/app/components/Reveal';
 import FonzuHubBackground from '@/app/components/FonzuHubBackground';
-import ImageUploader from '@/app/components/ImageUploader';
 import banner from '@/pic/7k_banner.webp';
 
 export default function FonzuHub() {
@@ -70,12 +69,6 @@ export default function FonzuHub() {
           </Reveal>
         </div>
       </div>
-
-      {/* Uploader Section for Testing */}
-      <div className="py-16">
-        <ImageUploader />
-      </div>
-
     </div>
   );
 }
