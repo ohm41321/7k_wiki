@@ -1,51 +1,52 @@
-import { NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
 
-// Configure Cloudinary using environment variables
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
+import { v4 as uuidv4 } from 'uuid';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file') as File | null;
 
     if (!file) {
-      return new NextResponse(JSON.stringify({ message: 'No file uploaded' }), { status: 400 });
+      return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    // IMPORTANT: Use service_role key for server-side operations
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
-    // Use a promise to handle the Cloudinary upload stream
-    const imageUrl = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          // Optional: specify a folder in Cloudinary
-          folder: '7k_wiki_uploads',
-        },
-        (error, result) => {
-          if (error) {
-            return reject(error);
-          }
-          if (result) {
-            resolve(result.secure_url);
-          } else {
-            reject(new Error('Cloudinary upload failed without an explicit error.'));
-          }
-        }
-      );
+    const fileExtension = file.name.split('.').pop();
+    // Generate a unique file name with the original extension
+    const fileName = `${uuidv4()}.${fileExtension}`;
+    const filePath = `public/${fileName}`;
 
-      // Pipe the buffer into the upload stream
-      uploadStream.end(buffer);
-    });
+    const { data, error } = await supabase.storage
+      .from('images') // The bucket name you created
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
 
-    return NextResponse.json({ imageUrl }, { status: 201 });
+    if (error) {
+      console.error('Supabase upload error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
-  } catch (error: any) {
-    console.error("Upload API Error:", error);
-    return new NextResponse(JSON.stringify({ message: error.message || 'Internal Server Error' }), { status: 500 });
+    // Get the public URL of the uploaded file
+    const { data: publicUrlData } = supabase.storage
+      .from('images')
+      .getPublicUrl(data.path);
+
+    if (!publicUrlData) {
+        return NextResponse.json({ error: 'Could not get public URL.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ url: publicUrlData.publicUrl });
+  } catch (e) {
+    console.error('Upload API error:', e);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

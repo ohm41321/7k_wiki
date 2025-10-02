@@ -51,7 +51,7 @@ export default function CreatePostModal() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`Upload failed with status: ${res.status}`);
       const data = await res.json();
-      const imageUrl = data.imageUrl;
+      const imageUrl = data.url; // Corrected from data.imageUrl
 
       if (!imageUrl) throw new Error('Invalid response from upload API');
 
