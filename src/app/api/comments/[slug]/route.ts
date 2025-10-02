@@ -1,61 +1,76 @@
+'use client';
 
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { getSession } from 'next-auth/react';
+import { createClient } from '@supabase/supabase-js';
 
-const commentsFilePath = path.join(process.cwd(), 'data', 'comments.json');
+// Initialize Supabase client
+// IMPORTANT: Use service_role key for server-side operations
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-interface Comment {
-  id: string;
-  slug: string;
-  author: string;
-  content: string;
-  date: string;
-}
+/**
+ * GET handler to fetch comments for a specific post slug.
+ */
+export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
+  const { slug } = params;
 
-// Function to read comments from the JSON file
-const readComments = (): Comment[] => {
+  if (!slug) {
+    return NextResponse.json({ error: 'Post slug is required' }, { status: 400 });
+  }
+
   try {
-    const fileContent = fs.readFileSync(commentsFilePath, 'utf-8');
-    return JSON.parse(fileContent);
-  } catch (error) {
-    // If the file doesn't exist or is empty, return an empty array
-    return [];
+    const { data, error } = await supabase
+      .from('comments')
+      .select('*')
+      .eq('post_slug', slug)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Supabase GET error:', error);
+      throw error;
+    }
+
+    return NextResponse.json(data);
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+    return NextResponse.json({ error: `Failed to fetch comments: ${errorMessage}` }, { status: 500 });
   }
-};
-
-// Function to write comments to the JSON file
-const writeComments = (comments: Comment[]) => {
-  fs.writeFileSync(commentsFilePath, JSON.stringify(comments, null, 2));
-};
-
-export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const comments = readComments();
-  const postComments = comments.filter((comment) => comment.slug === slug);
-  return NextResponse.json(postComments);
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const { content, author } = await request.json();
-
-  if (!content || !author) {
-    return NextResponse.json({ error: 'Missing content or author' }, { status: 400 });
+/**
+ * POST handler to create a new comment for a specific post slug.
+ */
+export async function POST(request: NextRequest, { params }: { params: { slug: string } }) {
+  const { slug } = params;
+  
+  if (!slug) {
+    return NextResponse.json({ error: 'Post slug is required' }, { status: 400 });
   }
 
-  const newComment: Comment = {
-    id: Date.now().toString(),
-    slug,
-    author,
-    content,
-    date: new Date().toISOString(),
-  };
+  try {
+    const { content, author } = await request.json();
 
-  const comments = readComments();
-  comments.push(newComment);
-  writeComments(comments);
+    if (!content || !author) {
+      return NextResponse.json({ error: 'Missing content or author' }, { status: 400 });
+    }
 
-  return NextResponse.json(newComment, { status: 201 });
+    const { data, error } = await supabase
+      .from('comments')
+      .insert([{ post_slug: slug, author, content }])
+      .select()
+      .single(); // .single() returns a single object instead of an array
+
+    if (error) {
+      console.error('Supabase POST error:', error);
+      throw error;
+    }
+
+    return NextResponse.json(data, { status: 201 });
+
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';
+    return NextResponse.json({ error: `Failed to create comment: ${errorMessage}` }, { status: 500 });
+  }
 }

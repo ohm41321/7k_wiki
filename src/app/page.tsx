@@ -2,9 +2,29 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Reveal from '@/app/components/Reveal';
 import FonzuHubBackground from '@/app/components/FonzuHubBackground';
-import banner from '@/pic/7k_banner.webp';
+import { getPosts } from '@/app/lib/posts';
+import banner7k from '@/pic/7k_banner.webp';
+import genericBanner from '@/pic/noname_feature.jpg';
+
+import lostswordBanner from '@/pic/lostsword_thumnail.png';
+
+// Define a mapping for game-specific details
+const gameDetails: { [key: string]: { title: string; banner: any } } = {
+  '7k-re-fonzu': {
+    title: 'Seven Knights Re:Birth',
+    banner: genericBanner,
+  },
+  'LostSword': {
+    title: 'LostSword',
+    banner: lostswordBanner,
+  },
+  // Add other games here
+};
 
 export default function FonzuHub() {
+  const allPosts = getPosts();
+  const games = [...new Set(allPosts.map(post => post.game).filter(Boolean))] as string[];
+
   return (
     <div className="text-textLight">
       {/* Hero Section */}
@@ -30,28 +50,33 @@ export default function FonzuHub() {
         </div>
 
         <div className="flex flex-wrap justify-center gap-8">
-          {/* Seven Knights Card */}
-          <Reveal className="block">
-            <Link href="/7k-re-fonzu">
-              <div className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl group w-full max-w-sm">
-                <div className="relative w-full aspect-[16/9] overflow-hidden">
-                  <Image 
-                    src={banner} 
-                    alt="Seven Knights Re:Birth Banner"
-                    fill
-                    style={{ objectFit: 'cover' }} 
-                    className="transition-transform duration-500 group-hover:scale-110"
-                  />
-                </div>
-                <div className="p-6">
-                    <h3 className="mb-2 mt-1 text-2xl font-bold tracking-tight text-secondary group-hover:text-accent transition-colors">Seven Knights Re:Birth</h3>
-                  <p className="font-normal text-textLight text-sm">
-                    เข้าสู่คลังข้อมูล ไกด์ และข่าวสารล่าสุดของเกม
-                  </p>
-                </div>
-              </div>
-            </Link>
-          </Reveal>
+          {games.map(gameSlug => {
+            const details = gameDetails[gameSlug] || { title: gameSlug, banner: genericBanner };
+            return (
+              <Reveal key={gameSlug} className="block">
+                <Link href={`/${gameSlug}`}>
+                  <div className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl group w-full max-w-sm">
+                    <div className="relative w-full aspect-[16/9] overflow-hidden">
+                      <Image 
+                        src={details.banner}
+                        alt={`${details.title} Banner`}
+                        fill
+                        style={{ objectFit: 'cover' }} 
+                        className="transition-transform duration-500 group-hover:scale-110"
+                        unoptimized={true}
+                      />
+                    </div>
+                    <div className="p-6">
+                        <h3 className="mb-2 mt-1 text-2xl font-bold tracking-tight text-secondary group-hover:text-accent transition-colors">{details.title}</h3>
+                      <p className="font-normal text-textLight text-sm">
+                        เข้าสู่คลังข้อมูล ไกด์ และข่าวสารล่าสุดของเกม
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              </Reveal>
+            );
+          })}
 
           {/* Coming Soon Card */}
           <Reveal className="block">

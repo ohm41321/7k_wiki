@@ -55,11 +55,7 @@ const Navbar = () => {
             <Link href="/" className="text-textLight hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Home
             </Link>
-            {status === 'authenticated' && pathname.startsWith('/7k-re-fonzu') && (
-              <Link href="/create" className="text-textLight hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                Create Post
-              </Link>
-            )}
+            
             {status === 'loading' ? (
               <div className="text-textLight">Loading...</div>
             ) : status === 'authenticated' ? (
@@ -116,11 +112,7 @@ const Navbar = () => {
             <Link href="/" className="text-textLight hover:text-yellow-300 block px-3 py-2 rounded-md text-base font-medium transition-colors">
               Home
             </Link>
-            {status === 'authenticated' && pathname.startsWith('/7k-re-fonzu') && (
-              <Link href="/create" className="text-textLight hover:text-yellow-300 block px-3 py-2 rounded-md text-base font-medium transition-colors">
-                Create Post
-              </Link>
-            )}
+            
             {status === 'loading' ? (
               <div className="text-textLight px-3 py-2">Loading...</div>
             ) : status === 'authenticated' ? (

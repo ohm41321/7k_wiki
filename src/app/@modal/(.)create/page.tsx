@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Modal } from '@/app/components/Modal';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import ReactMarkdown from 'react-markdown';
@@ -10,11 +10,13 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkBreaks from 'remark-breaks';
-import Toast from '@/app/components/Toast';
+import { toast } from 'sonner';
 
 export default function CreatePostModal() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const game = searchParams.get('game');
   
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState('');
@@ -25,15 +27,14 @@ export default function CreatePostModal() {
   const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [showToastMessage, setShowToastMessage] = useState<string | null>(null);
 
-  // Auto-resize textarea
+  const [stagedFiles, setStagedFiles] = useState<Map<string, File>>(new Map());
+
   useEffect(() => {
-    if (activeTab === 'write' && textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [content, activeTab]);
+    return () => {
+      stagedFiles.forEach((_, blobUrl) => URL.revokeObjectURL(blobUrl));
+    };
+  }, [stagedFiles]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -41,33 +42,21 @@ export default function CreatePostModal() {
     }
   }, [status, router]);
 
-  const uploadAndInsertImage = async (file: File) => {
-    const placeholder = `\n![Uploading ${file.name}...]()\n`;
+  const stageImageForUpload = (file: File) => {
+    const blobUrl = URL.createObjectURL(file);
+    const placeholder = `
+![Uploading ${file.name}...}](${blobUrl})
+`;
     setContent(prev => prev + placeholder);
-
-    const formData = new FormData();
-    formData.append('file', file);
-    try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
-      if (!res.ok) throw new Error(`Upload failed with status: ${res.status}`);
-      const data = await res.json();
-      const imageUrl = data.url; // Corrected from data.imageUrl
-
-      if (!imageUrl) throw new Error('Invalid response from upload API');
-
-      setContent(prev => prev.replace(placeholder, `\n![${file.name}](${imageUrl})\n`));
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setContent(prev => prev.replace(placeholder, `\n[Error uploading image: ${errorMessage}]\n`));
-      setError(errorMessage);
-    }
+    setStagedFiles(prev => new Map(prev).set(blobUrl, file));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       for (const file of Array.from(e.target.files)) {
-        uploadAndInsertImage(file);
+        stageImageForUpload(file);
       }
+      e.target.value = '';
     }
   };
 
@@ -78,7 +67,7 @@ export default function CreatePostModal() {
         const file = items[i].getAsFile();
         if (file) {
           e.preventDefault();
-          uploadAndInsertImage(file);
+          stageImageForUpload(file);
           break;
         }
       }
@@ -92,15 +81,12 @@ export default function CreatePostModal() {
   const wrapText = (before: string, after: string) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const selectedText = content.substring(start, end);
     const newText = `${before}${selectedText || 'text'}${after}`;
-    
     const newContent = content.substring(0, start) + newText + content.substring(end);
     setContent(newContent);
-
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + before.length, start + before.length + (selectedText.length || 'text'.length));
@@ -120,31 +106,63 @@ export default function CreatePostModal() {
     setLoading(true);
     setError(null);
 
-    const imageUrls = content.match(/!\\[.*?\\]\((https?:\/\/[^\s]+)\)/g)?.map(md => md.match(/!\\[.*?\\]\((https?:\/\/[^\s]+)\)/)![1]) || [];
-    const author = session?.user?.name || 'Anonymous';
+    const promise = async () => {
+      let finalContent = content;
+      const imageUrls: string[] = [];
+      const uploadPromises: Promise<{ blobUrl: string, finalUrl: string }>[] = [];
+      const markdownImageRegex = /!\[[^\\]*\]\((blob:[^)]+)\)/g;
+      let match;
 
-    try {
+      while ((match = markdownImageRegex.exec(content)) !== null) {
+        const blobUrl = match[1];
+        const fileToUpload = stagedFiles.get(blobUrl);
+        if (fileToUpload) {
+          const formData = new FormData();
+          formData.append('file', fileToUpload);
+          const uploadPromise = fetch('/api/upload', { method: 'POST', body: formData })
+            .then(res => res.ok ? res.json() : Promise.reject(new Error('Upload failed')))
+            .then(data => ({ blobUrl, finalUrl: data.url }));
+          uploadPromises.push(uploadPromise);
+        }
+      }
+
+      const settledUploads = await Promise.all(uploadPromises);
+      settledUploads.forEach(({ blobUrl, finalUrl }) => {
+        finalContent = finalContent.replace(new RegExp(blobUrl, 'g'), finalUrl);
+        imageUrls.push(finalUrl);
+      });
+
+      const author = session?.user?.name || 'Anonymous';
       const res = await fetch('/api/posts/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, author, content, imageUrls, tags }),
+        body: JSON.stringify({ title, author, content: finalContent, imageUrls, tags, game }),
       });
 
-      if (!res.ok) throw new Error('Failed to create post');
-      
-      setShowToastMessage('Post created successfully!');
-      setTitle('');
-      setContent('');
-      setTags('');
-      
-      await new Promise(resolve => setTimeout(resolve, 900));
-      router.refresh();
-      router.back();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
+      if (!res.ok) {
+        throw new Error('Failed to create post');
+      }
+      return { ...await res.json() };
+    };
+
+    toast.promise(promise(), {
+      loading: 'Creating post...',
+      success: (data) => {
+        router.refresh();
+        // Add a small delay to ensure the refresh completes before navigating
+        setTimeout(() => {
+          router.back();
+        }, 500); // 0.5 second delay
+        return `Post "${data.title}" has been created.`;
+      },
+      error: (err) => {
+        setError(err.message);
+        return `Error: ${err.message}`;
+      },
+      finally: () => {
+        setLoading(false);
+      }
+    });
   };
   
   if (status === 'loading') {
@@ -159,9 +177,6 @@ export default function CreatePostModal() {
     <Modal>
       <div className="flex">
         <div className="flex-grow transition-all duration-300 ease-in-out">
-          {showToastMessage && (
-            <Toast message={showToastMessage} onClose={() => setShowToastMessage(null)} />
-          )}
           <div className="flex items-start space-x-4">
             <div className="flex-shrink-0">
               <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center">
@@ -238,52 +253,27 @@ export default function CreatePostModal() {
                 <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-700">
                   <div className="flex items-center space-x-1">
                     <label htmlFor="image-upload" className="cursor-pointer text-white hover:text-accent p-2 rounded-full">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </label>
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileChange}
-                      multiple
-                    />
-                    <button 
-                      type="button" 
-                      className="cursor-pointer text-white hover:text-accent p-2 rounded-full"
-                      onClick={() => setShowEmojiPicker(prev => !prev)}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                    <input id="image-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} multiple />
+                    <button type="button" className="cursor-pointer text-white hover:text-accent p-2 rounded-full" onClick={() => setShowEmojiPicker(prev => !prev)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </button>
-                    <button 
-                      type="button" 
-                      className="cursor-pointer text-white hover:text-accent p-2 rounded-full"
-                      onClick={() => setShowMarkdownHelp(prev => !prev)}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.79 4 4 0 1.105-.448 2.105-1.172 2.828a4.002 4.002 0 00-2.828 1.172V15m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                    <button type="button" className="cursor-pointer text-white hover:text-accent p-2 rounded-full" onClick={() => setShowMarkdownHelp(prev => !prev)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.79 4 4 0 1.105-.448 2.105-1.172 2.828a4.002 4.002 0 00-2.828 1.172V15m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </button>
                   </div>
                   
                   <div className="flex items-center">
                     {error && <p className="text-red-500 text-sm mr-4">{error}</p>}
-                    <button
-                      type="submit"
-                      className="bg-white text-black px-4 py-2 rounded-full disabled:opacity-50"
-                      disabled={loading || !title.trim()}
-                    >
+                    <button type="submit" className="bg-white text-black px-4 py-2 rounded-full disabled:opacity-50" disabled={loading}>
                       {loading ? 'Posting...' : 'Post'}
                     </button>
                   </div>
                 </div>
                 {showEmojiPicker && (
                   <div className="mt-2">
-                    <EmojiPicker onEmojiClick={onEmojiClick} width="100%" />
+                    <EmojiPicker onEmojiClick={onEmojiClick} width="100%" theme="dark" />
                   </div>
                 )}
               </form>
@@ -293,23 +283,20 @@ export default function CreatePostModal() {
 
         {/* Markdown Help Panel */}
         <div className={`flex-shrink-0 transition-all duration-300 ease-in-out overflow-y-auto ${showMarkdownHelp ? 'w-72 pl-4' : 'w-0'}`}>
-          <div className={`h-full p-4 bg-gray-900 rounded-md border border-gray-700 text-sm text-gray-300 ${!showMarkdownHelp && 'hidden'}`}>
+          <div className={`h-full p-4 bg-gray-900 rounded-md border border-gray-700 text-sm text-gray-300 ${!showMarkdownHelp && 'hidden'}`}> 
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-bold text-white">Markdown Guide</h3>
               <button type="button" onClick={() => setShowMarkdownHelp(false)} className="text-gray-400 hover:text-white">
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             <ul className="list-disc list-inside space-y-2">
-              <li><code># Heading 1</code> - Biggest heading</li>
-              <li><code>## Heading 2</code> - Medium heading</li>
-              <li><code>### Heading 3</code> - Smallest heading</li>
-              <li><code>**Bold Text**</code> - Makes text bold</li>
-              <li><code>*Italic Text*</code> - Makes text italic</li>
-              <li><code>- List item</code> - Creates a bulleted list</li>
-              <li><code>[Link Text](https://example.com)</code> - Creates a link</li>
+              <li><code># Heading 1</code></li>
+              <li><code>**Bold**</code></li>
+              <li><code>*Italic*</code></li>
+              <li><code>- List item</code></li>
+              <li><code>[Link](https://...)</code></li>
+              <li>Paste image to upload</li>
             </ul>
           </div>
         </div>

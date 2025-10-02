@@ -3,16 +3,17 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setLoading(true);
 
     const result = await signIn('credentials', {
       redirect: false,
@@ -20,10 +21,14 @@ export default function LoginPage() {
       password,
     });
 
+    setLoading(false);
+
     if (result?.error) {
-      setError('Invalid credentials');
-    } else {
+      toast.error('Invalid username or password');
+    } else if (result?.ok) {
+      toast.success('Login successful!');
       router.push('/');
+      router.refresh(); // To update navbar state
     }
   };
 
@@ -40,6 +45,7 @@ export default function LoginPage() {
               onChange={(e) => setLogin(e.target.value)}
               required
               className="w-full px-3 py-2 text-black bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+              disabled={loading}
             />
           </div>
           <div>
@@ -50,14 +56,15 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full px-3 py-2 text-black bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+              disabled={loading}
             />
           </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
-            className="w-full px-4 py-2 font-bold text-primary bg-secondary rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary focus:ring-accent"
+            className="w-full px-4 py-2 font-bold text-primary bg-secondary rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary focus:ring-accent disabled:opacity-50"
+            disabled={loading}
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
       </div>

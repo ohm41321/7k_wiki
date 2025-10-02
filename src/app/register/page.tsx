@@ -3,19 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setLoading(true);
 
-    try {
+    const promise = async () => {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -24,15 +26,22 @@ export default function RegisterPage() {
         body: JSON.stringify({ name, email, password }),
       });
 
-      if (res.ok) {
-        router.push('/login');
-      } else {
+      if (!res.ok) {
         const data = await res.json();
-        setError(data.message || 'Something went wrong');
+        throw new Error(data.message || 'Something went wrong');
       }
-    } catch (err: any) {
-      setError(err.message);
-    }
+      return { ...await res.json() };
+    };
+
+    toast.promise(promise(), {
+      loading: 'Creating account...',
+      success: () => {
+        setTimeout(() => router.push('/login'), 1000);
+        return 'Account created successfully! Please login.';
+      },
+      error: (err) => `Error: ${err.message}`,
+      finally: () => setLoading(false),
+    });
   };
 
   return (
@@ -48,6 +57,7 @@ export default function RegisterPage() {
               onChange={(e) => setName(e.target.value)}
               required
               className="w-full px-3 py-2 text-black bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+              disabled={loading}
             />
           </div>
           <div>
@@ -58,6 +68,7 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-3 py-2 text-black bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+              disabled={loading}
             />
           </div>
           <div>
@@ -68,14 +79,15 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full px-3 py-2 text-black bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+              disabled={loading}
             />
           </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
-            className="w-full px-4 py-2 font-bold text-primary bg-secondary rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary focus:ring-accent"
+            className="w-full px-4 py-2 font-bold text-primary bg-secondary rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary focus:ring-accent disabled:opacity-50"
+            disabled={loading}
           >
-            Register
+            {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
         <p className="text-center text-sm text-textLight">

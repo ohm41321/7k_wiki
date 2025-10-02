@@ -7,7 +7,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import remarkBreaks from 'remark-breaks';
-import Toast from '@/app/components/Toast';
+import { toast } from 'sonner';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 
 interface EditPostFormProps {
   post: {
@@ -28,23 +29,96 @@ export default function EditPostForm({ post }: EditPostFormProps) {
   const [content, setContent] = useState(post.content);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showToastMessage, setShowToastMessage] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const [stagedFiles, setStagedFiles] = useState<Map<string, File>>(new Map());
+
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [content]);
+    return () => {
+      stagedFiles.forEach((_, blobUrl) => URL.revokeObjectURL(blobUrl));
+    };
+  }, [stagedFiles]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
+
+  const stageImageForUpload = (file: File) => {
+    const blobUrl = URL.createObjectURL(file);
+    const placeholder = `\n![Uploading ${file.name}...}(${blobUrl})\n`;
+    setContent(prev => prev + placeholder);
+    setStagedFiles(prev => new Map(prev).set(blobUrl, file));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      for (const file of Array.from(e.target.files)) {
+        stageImageForUpload(file);
+      }
+      e.target.value = '';
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          stageImageForUpload(file);
+          break;
+        }
+      }
+    }
+  };
+
+  const onEmojiClick = (emojiData: EmojiClickData) => {
+    setContent(prev => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const wrapText = (before: string, after: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    const newText = `${before}${selectedText || 'text'}${after}`;
+    const newContent = content.substring(0, start) + newText + content.substring(end);
+    setContent(newContent);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, start + before.length + (selectedText.length || 'text'.length));
+    }, 0);
+  };
+
+  const handleDelete = async () => {
+    const promise = async () => {
+      const res = await fetch(`/api/posts/${post.slug}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to delete post');
+      }
+      return { slug: post.slug };
+    };
+
+    toast.promise(promise(), {
+      loading: 'Deleting post...',
+      success: () => {
+        router.push('/7k-re-fonzu');
+        router.refresh();
+        return `Post has been deleted.`;
+      },
+      error: (err) => `Error: ${err.message}`,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,28 +129,58 @@ export default function EditPostForm({ post }: EditPostFormProps) {
     setLoading(true);
     setError(null);
 
-    try {
-      const res = await fetch(`/api/posts/${post.slug}`,
-       {
+    const promise = async () => {
+      let finalContent = content;
+      const uploadPromises: Promise<{ blobUrl: string, finalUrl: string }>[] = [];
+      const markdownImageRegex = /!\\\[[^\\]*\]\((blob:[^)]+)\)/g;
+      let match;
+
+      while ((match = markdownImageRegex.exec(content)) !== null) {
+        const blobUrl = match[1];
+        const fileToUpload = stagedFiles.get(blobUrl);
+        if (fileToUpload) {
+          const formData = new FormData();
+          formData.append('file', fileToUpload);
+          const uploadPromise = fetch('/api/upload', { method: 'POST', body: formData })
+            .then(res => res.ok ? res.json() : Promise.reject(new Error('Upload failed')))
+            .then(data => ({ blobUrl, finalUrl: data.url }));
+          uploadPromises.push(uploadPromise);
+        }
+      }
+
+      const settledUploads = await Promise.all(uploadPromises);
+      settledUploads.forEach(({ blobUrl, finalUrl }) => {
+        finalContent = finalContent.replace(new RegExp(blobUrl, 'g'), finalUrl);
+      });
+
+      const res = await fetch(`/api/posts/${post.slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, tags }),
+        body: JSON.stringify({ title, content: finalContent, tags }),
       });
 
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || 'Failed to update post');
       }
+      return { ...await res.json() };
+    };
 
-      setShowToastMessage('Post updated successfully!');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      router.push(`/7k-re-fonzu/posts/${post.slug}`);
-      router.refresh();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
+    toast.promise(promise(), {
+      loading: 'Saving changes...',
+      success: (data) => {
+        router.push(`/7k-re-fonzu/posts/${post.slug}`);
+        router.refresh();
+        return `Post "${data.title}" has been updated.`;
+      },
+      error: (err) => {
+        setError(err.message);
+        return `Error: ${err.message}`;
+      },
+      finally: () => {
+        setLoading(false);
+      }
+    });
   };
   
   if (status === 'loading') {
@@ -84,90 +188,145 @@ export default function EditPostForm({ post }: EditPostFormProps) {
   }
 
   return (
-    <div className="bg-gray-900/30 p-6 sm:p-8 rounded-lg shadow-xl">
-        {showToastMessage && (
-            <Toast message={showToastMessage} onClose={() => setShowToastMessage(null)} />
-        )}
-        <form onSubmit={handleSubmit}>
-            <div className="border-b border-gray-700 pb-4">
-                <label htmlFor="title" className="block text-sm font-medium text-gray-400 mb-1">Title</label>
-                <input
-                    id="title"
-                    type="text"
-                    className="block w-full bg-gray-800 border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 sm:text-lg font-bold text-white placeholder-gray-500 p-2"
-                    placeholder="Post Title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                />
-                <label htmlFor="tags" className="block text-sm font-medium text-gray-400 mt-4 mb-1">Tags</label>
-                <input
-                    id="tags"
-                    type="text"
-                    className="block w-full bg-gray-800 border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-white placeholder-gray-500 p-2"
-                    placeholder="Tags (comma-separated)"
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                />
-            </div>
+    <div className="flex">
+      <div className="flex-grow bg-gray-900/30 p-6 sm:p-8 rounded-lg shadow-xl">
+          <form onSubmit={handleSubmit}>
+              <div className="border-b border-gray-700 pb-4">
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-400 mb-1">Title</label>
+                  <input
+                      id="title"
+                      type="text"
+                      className="block w-full bg-gray-800 border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 sm:text-lg font-bold text-white placeholder-gray-500 p-2"
+                      placeholder="Post Title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      required
+                  />
+                  <label htmlFor="tags" className="block text-sm font-medium text-gray-400 mt-4 mb-1">Tags</label>
+                  <input
+                      id="tags"
+                      type="text"
+                      className="block w-full bg-gray-800 border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-white placeholder-gray-500 p-2"
+                      placeholder="Tags (comma-separated)"
+                      value={tags}
+                      onChange={(e) => setTags(e.target.value)}
+                  />
+              </div>
 
-            <div className="mt-4">
-                <div className="border-b border-gray-700">
-                    <nav className="-mb-px flex space-x-4" aria-label="Tabs">
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('write')}
-                        className={`${activeTab === 'write' ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
-                    >
-                        Write
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('preview')}
-                        className={`${activeTab === 'preview' ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
-                    >
-                        Preview
-                    </button>
-                    </nav>
-                </div>
-                <div className="mt-4">
-                    {activeTab === 'write' ? (
-                    <textarea
-                        ref={textareaRef}
-                        rows={15}
-                        className="block w-full bg-gray-800 border-gray-600 rounded-md focus:ring-0 sm:text-lg text-white placeholder-gray-500 p-3 resize-y"
-                        placeholder="Write your post here..."
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                    />
-                    ) : (
-                    <div className="prose prose-lg dark:prose-invert max-w-none bg-gray-800 p-3 rounded-md text-white overflow-auto" style={{ minHeight: 360 }}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>{
-                        content || '*Preview will appear here*'
-                        }</ReactMarkdown>
-                    </div>
-                    )}
-                </div>
-            </div>
+              <div className="mt-4">
+                  <div className="border-b border-gray-700">
+                      <nav className="-mb-px flex space-x-4" aria-label="Tabs">
+                      <button
+                          type="button"
+                          onClick={() => setActiveTab('write')}
+                          className={`${activeTab === 'write' ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
+                      >
+                          Write
+                      </button>
+                      <button
+                          type="button"
+                          onClick={() => setActiveTab('preview')}
+                          className={`${activeTab === 'preview' ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}
+                      >
+                          Preview
+                      </button>
+                      </nav>
+                  </div>
+                  <div className="mt-4">
+                      {activeTab === 'write' ? (
+                        <div>
+                          <div className="flex items-center space-x-2 p-2 bg-gray-900 rounded-t-md border-b border-gray-700">
+                              <button type="button" onClick={() => wrapText('**', '**')} className="px-3 py-1 text-sm font-bold text-white hover:bg-gray-700 rounded">B</button>
+                              <button type="button" onClick={() => wrapText('*', '*')} className="px-3 py-1 text-sm italic text-white hover:bg-gray-700 rounded">I</button>
+                              <button type="button" onClick={() => wrapText('~~', '~~')} className="px-3 py-1 text-sm line-through text-white hover:bg-gray-700 rounded">S</button>
+                              <button type="button" onClick={() => wrapText('\n# ', '\n')} className="px-3 py-1 text-sm font-bold text-white hover:bg-gray-700 rounded">H1</button>
+                              <button type="button" onClick={() => wrapText('\n## ', '\n')} className="px-3 py-1 text-sm font-bold text-white hover:bg-gray-700 rounded">H2</button>
+                              <button type="button" onClick={() => wrapText('\n### ', '\n')} className="px-3 py-1 text-sm font-bold text-white hover:bg-gray-700 rounded">H3</button>
+                          </div>
+                          <textarea
+                              ref={textareaRef}
+                              rows={15}
+                              className="block w-full bg-gray-800 border-gray-600 rounded-b-md focus:ring-0 sm:text-lg text-white placeholder-gray-500 p-3 resize-y"
+                              placeholder="Write your post here..."
+                              value={content}
+                              onChange={(e) => setContent(e.target.value)}
+                              onPaste={handlePaste}
+                          />
+                        </div>
+                      ) : (
+                      <div className="prose prose-lg dark:prose-invert max-w-none bg-gray-800 p-3 rounded-md text-white overflow-auto" style={{ minHeight: 360 }}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw]}>{content || '*Preview will appear here*'}</ReactMarkdown>
+                      </div>
+                      )}
+                  </div>
+              </div>
 
-            <div className="flex items-center justify-end pt-4 mt-4 border-t border-gray-700">
-                {error && <p className="text-red-500 text-sm mr-4">{error}</p>}
-                <button
-                    type="button"
-                    onClick={() => router.back()}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-full mr-2"
-                >
-                    Cancel
-                </button>
-                <button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full disabled:opacity-50"
-                    disabled={loading || !title.trim()}
-                >
-                    {loading ? 'Saving...' : 'Save Changes'}
-                </button>
-            </div>
-        </form>
+              <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-700">
+                  <div className="flex items-center space-x-1">
+                      <label htmlFor="image-upload-edit" className="cursor-pointer text-white hover:text-accent p-2 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      </label>
+                      <input id="image-upload-edit" type="file" accept="image/*" className="hidden" onChange={handleFileChange} multiple />
+                      <button type="button" className="cursor-pointer text-white hover:text-accent p-2 rounded-full" onClick={() => setShowEmojiPicker(prev => !prev)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </button>
+                      <button type="button" className="cursor-pointer text-white hover:text-accent p-2 rounded-full" onClick={() => setShowMarkdownHelp(prev => !prev)}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.79 4 4 0 1.105-.448 2.105-1.172 2.828a4.002 4.002 0 00-2.828 1.172V15m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </button>
+                  </div>
+
+                  <div className="flex items-center">
+                      {error && <p className="text-red-500 text-sm mr-4">{error}</p>}
+                      <button
+                          type="button"
+                          onClick={() => handleDelete()}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full mr-auto"
+                      >
+                          Delete Post
+                      </button>
+                      <button
+                          type="button"
+                          onClick={() => router.back()}
+                          className="bg-gray-600 text-white px-4 py-2 rounded-full mr-2"
+                      >
+                          Cancel
+                      </button>
+                      <button
+                          type="submit"
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full disabled:opacity-50"
+                          disabled={loading}
+                      > 
+                          {loading ? 'Saving...' : 'Save Changes'}
+                      </button>
+                  </div>
+              </div>
+              {showEmojiPicker && (
+                <div className="mt-2">
+                  <EmojiPicker onEmojiClick={onEmojiClick} width="100%" theme="dark" />
+                </div>
+              )}
+          </form>
+      </div>
+
+      {/* Markdown Help Panel */}
+      <div className={`flex-shrink-0 transition-all duration-300 ease-in-out overflow-y-auto ${showMarkdownHelp ? 'w-72 pl-4' : 'w-0'}`}>
+        <div className={`h-full p-4 bg-gray-900/50 rounded-md border border-gray-700 text-sm text-gray-300 ${!showMarkdownHelp && 'hidden'}`}>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-bold text-white">Markdown Guide</h3>
+            <button type="button" onClick={() => setShowMarkdownHelp(false)} className="text-gray-400 hover:text-white">
+              <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <ul className="list-disc list-inside space-y-2">
+              <li><code># Heading 1</code></li>
+              <li><code>**Bold**</code></li>
+              <li><code>*Italic*</code></li>
+              <li><code>- List item</code></li>
+              <li><code>[Link](https://...)</code></li>
+              <li>Paste image to upload</li>
+            </ul>
+        </div>
+      </div>
     </div>
   );
 }

@@ -57,7 +57,7 @@ class Star {
     this.p = p;
     this.x = p.random(p.width);
     this.y = p.random(p.height);
-    this.size = p.random(0.5, 1.5);
+    this.size = p.random(1, 2.5);
     this.twinkleOffset = p.random(p.TWO_PI);
   }
 
@@ -65,9 +65,18 @@ class Star {
     const p = this.p;
     // Use a sine wave for a smooth twinkling effect
     const alpha = p.map(p.sin(p.frameCount * 0.02 + this.twinkleOffset), -1, 1, 50, 180);
+    const starColor = p.color(255, 255, 255, alpha);
+
+    // Apply glow effect using shadowBlur
+    p.drawingContext.shadowBlur = this.size * 2.5;
+    p.drawingContext.shadowColor = starColor;
+
     p.noStroke();
-    p.fill(255, 255, 255, alpha); // Soft white color
+    p.fill(starColor);
     p.ellipse(this.x, this.y, this.size, this.size);
+
+    // Reset glow effect so it doesn't affect other elements like the streaks
+    p.drawingContext.shadowBlur = 0;
   }
 }
 

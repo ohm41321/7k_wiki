@@ -10,5 +10,11 @@
     "email": "ohm.ro1488@gmail.com",
     "password": "$2a$10$Z4X20TnuYnQFANbFbWxbvO/3mwihQpJsPN08SlaDW.PQ5omEEnCnG",
     "id": "2"
+  },
+  {
+    "name": "test01",
+    "email": "test01@gmail.com",
+    "password": "$2a$10$8tvgec9D11Jto22hdEpAxeNm9QEtDbyz1Bz8DaGM/.P4.B3VOlPDC",
+    "id": "3"
   }
 ]

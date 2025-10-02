@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { getPosts } from '@/app/lib/posts';
@@ -13,16 +12,17 @@ interface PostData {
   category: string;
   tags: string[];
   imageUrls?: string[];
+  game: string;
 }
 
 type PageProps = {
-  params: Promise<{ category: string }>;
+  params: { game: string; category: string };
 };
 
-export default async function CategoryPage({ params }: PageProps) {
-  const { category } = await params;
-  const allPosts: PostData[] = getPosts();
-  const posts = allPosts.filter(post => post.category.toLowerCase() === category.toLowerCase());
+export default function CategoryPage({ params }: PageProps) {
+  const { game, category } = params;
+  const gamePosts: PostData[] = getPosts({ game });
+  const posts = gamePosts.filter(post => post.category.toLowerCase() === category.toLowerCase());
 
   const formatDateThai = (iso: string) => {
     const d = new Date(iso);
@@ -45,7 +45,7 @@ export default async function CategoryPage({ params }: PageProps) {
           {posts.map((post) => (
             <Reveal key={post.slug} className="block">
               <Link 
-                href={`/7k-re-fonzu/posts/${post.slug}`} 
+                href={`/${game}/posts/${post.slug}`} 
                 className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl group"
               >
                 <div className="relative w-full aspect-[16/9] overflow-hidden">
@@ -56,6 +56,7 @@ export default async function CategoryPage({ params }: PageProps) {
                       fill
                       style={{ objectFit: 'cover' }} 
                       className="transition-transform duration-500 group-hover:scale-110"
+                      unoptimized={true}
                     />
                   ) : (
                     <Image 
@@ -69,7 +70,7 @@ export default async function CategoryPage({ params }: PageProps) {
                 </div>
                 <div className="p-6">
                   {post.category && (
-                    <Link href={`/7k-re-fonzu/category/${post.category.toLowerCase()}`}>
+                    <Link href={`/${game}/category/${post.category.toLowerCase()}`}>
                       <span className="text-accent font-bold text-sm hover:underline">{post.category}</span>
                     </Link>
                   )}

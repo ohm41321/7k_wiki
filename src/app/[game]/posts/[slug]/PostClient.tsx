@@ -26,6 +26,7 @@ interface PostClientProps {
     category: string;
     tags: string[];
     imageUrls?: string[];
+    game: string;
   };
 }
 
@@ -59,7 +60,7 @@ export default function PostClient({ post }: PostClientProps) {
             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
               <div className="md:w-2/3">
                 {post.category && (
-                  <Link href={`/7k-re-fonzu/category/${post.category.toLowerCase()}`}>
+                  <Link href={`/${post.game}/category/${post.category.toLowerCase()}`}>
                     <span className="text-accent font-bold text-lg hover:underline">{post.category}</span>
                   </Link>
                 )}
@@ -75,7 +76,7 @@ export default function PostClient({ post }: PostClientProps) {
                 {session?.user?.name === post.author && (
                   <div className="mt-4">
                     <button 
-                      onClick={() => router.push(`/7k-re-fonzu/posts/${post.slug}/edit`)}
+                      onClick={() => router.push(`/${post.game}/posts/${post.slug}/edit`)}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md text-sm transition-colors"
                     >
                       Edit Post
@@ -84,7 +85,7 @@ export default function PostClient({ post }: PostClientProps) {
                 )}
                 <div className="mt-4 flex flex-wrap gap-2 md:justify-end">
                   {post.tags.map(tag => (
-                    <Link href={`/7k-re-fonzu/tags/${tag.toLowerCase()}`} key={tag}>
+                    <Link href={`/${post.game}/tags/${tag.toLowerCase()}`} key={tag}>
                       <span className="bg-gray-700 text-textLight px-2 py-1 rounded-md text-xs hover:bg-gray-600 transition-colors">#{tag}</span>
                     </Link>
                   ))}
@@ -171,7 +172,7 @@ export default function PostClient({ post }: PostClientProps) {
           onClose={() => setLightbox(null)}
         />
       )}
-      <Link href="/7k-re-fonzu">
+      <Link href={`/${post.game}`}>
         <span className="fixed top-20 left-8 z-40 bg-secondary hover:bg-accent text-white font-bold py-3 px-4 rounded-full shadow-lg transition-transform duration-200 ease-in-out hover:scale-105 flex items-center gap-2 cursor-pointer">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
