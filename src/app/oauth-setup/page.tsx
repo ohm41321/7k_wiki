@@ -95,13 +95,6 @@ export default function OAuthSetupPage() {
               </div>
             </div>
 
-            <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-4 mb-6">
-              <h4 className="text-green-400 font-semibold mb-2">📄 Credentials File</h4>
-              <p className="text-green-300 text-sm">
-                Google OAuth credentials are saved in <code className="bg-black/30 px-2 py-1 rounded">.google-oauth-credentials.txt</code> (not committed to git for security).
-                Copy the Client ID and Client Secret from that file when configuring Supabase.
-              </p>
-            </div>
 
             <div className="text-center mt-8 space-y-4">
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
