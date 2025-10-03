@@ -12,6 +12,14 @@ import remarkBreaks from 'remark-breaks';
 import { toast } from 'sonner';
 import { useAuth } from '@/app/lib/use-auth';
 
+const customSchema = {
+  ...defaultSchema,
+  protocols: {
+    ...defaultSchema.protocols,
+    src: [...(defaultSchema.protocols?.src || []), 'blob', 'data'],
+  },
+};
+
 export default function CreatePostModal() {
   const { user, loading: userLoading } = useAuth();
   const router = useRouter();
