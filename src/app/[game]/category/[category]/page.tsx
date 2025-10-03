@@ -4,25 +4,23 @@ import { getPosts } from '@/app/lib/posts';
 import Reveal from '@/app/components/Reveal';
 import banner from '@/pic/noname_feature.jpg';
 
-interface PostData {
-  slug: string;
-  title: string;
-  date: string;
-  author: string;
-  category: string;
-  tags: string[];
-  imageUrls?: string[];
-  game: string;
-}
+// The type is now inferred from the getPosts function, so we don't need a local PostData interface.
+// The new Post type has author as an object and created_at instead of date.
 
 type PageProps = {
   params: { game: string; category: string };
 };
 
-export default function CategoryPage({ params }: PageProps) {
+export default async function CategoryPage({ params }: PageProps) {
   const { game, category } = params;
-  const gamePosts: PostData[] = getPosts({ game });
-  const posts = gamePosts.filter(post => post.category.toLowerCase() === category.toLowerCase());
+  
+  // 1. Await the posts
+  // 2. getPosts() now fetches all posts, so we filter by game and category here.
+  const allPosts = await getPosts();
+  const posts = allPosts.filter(post => 
+    post.game === game && 
+    post.category?.toLowerCase() === category.toLowerCase()
+  );
 
   const formatDateThai = (iso: string) => {
     const d = new Date(iso);
@@ -76,7 +74,7 @@ export default function CategoryPage({ params }: PageProps) {
                   )}
                   <h3 className="mb-2 mt-1 text-xl font-bold tracking-tight text-secondary group-hover:text-accent transition-colors">{post.title}</h3>
                   <p className="font-normal text-textLight text-sm" suppressHydrationWarning>
-                    By {post.author} on {formatDateThai(post.date)} เวลา {formatTimeThai(post.date)}
+                    By {post.author?.username || 'Unknown'} on {formatDateThai(post.created_at)} เวลา {formatTimeThai(post.created_at)}
                   </p>
                 </div>
               </Link>
