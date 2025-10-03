@@ -26,8 +26,8 @@ export default function LoginPage() {
       toast.error('Invalid credentials');
     } else {
       toast.success('Login successful!');
-      router.push('/');
-      router.refresh(); // To update navbar state
+      // Hard reload to ensure session is read correctly by all components
+      window.location.assign('/');
     }
   };
 

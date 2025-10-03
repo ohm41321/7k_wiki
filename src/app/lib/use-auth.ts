@@ -18,18 +18,30 @@ export function useAuth() {
 
   useEffect(() => {
     const getSessionAndProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
 
-      if (session?.user) {
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('username')
-          .eq('id', session.user.id)
-          .single();
-        setProfile(userProfile as Profile | null);
+        if (session?.user) {
+          setUser(session.user);
+          const { data: userProfile, error: profileError } = await supabase
+            .from('users')
+            .select('username')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (profileError) throw profileError;
+          setProfile(userProfile as Profile | null);
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error('Error getting session or profile:', error);
+        setUser(null);
+        setProfile(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     // Run once on mount
@@ -37,22 +49,31 @@ export function useAuth() {
 
     // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('username')
-          .eq('id', session.user.id)
-          .single();
-        setProfile(userProfile as Profile | null);
-      } else {
-        setProfile(null); // Clear profile on logout
-      }
-      setLoading(false);
-      
-      // Refresh server-side components on sign-in/out
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        router.refresh();
+      setLoading(true);
+      try {
+        if (session?.user) {
+          setUser(session.user);
+          const { data: userProfile, error: profileError } = await supabase
+            .from('users')
+            .select('username')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (profileError) throw profileError;
+          setProfile(userProfile as Profile | null);
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
+
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          router.refresh();
+        }
+      } catch (error) {
+        console.error('Error in auth state change handler:', error);
+        setUser(null);
+        setProfile(null);
+      } finally {
+        setLoading(false);
       }
     });
 
