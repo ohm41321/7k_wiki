@@ -7,5 +7,6 @@ export async function POST(req: NextRequest) {
 
   await supabase.auth.signOut();
 
-  return NextResponse.json({ message: 'Success!' }, { status: 200 });
+  // Return the response object which now has cleared cookies
+  return res;
 }

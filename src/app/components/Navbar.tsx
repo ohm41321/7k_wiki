@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/lib/use-auth';
 import { createSupabaseBrowserClient } from '@/lib/supabase/utils';
+import Search from './Search';
 
 const Navbar = () => {
   const { user, profile, loading } = useAuth();

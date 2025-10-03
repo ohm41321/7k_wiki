@@ -2,23 +2,22 @@ import { createSupabaseReqResClient, createSupabaseAdminClient } from '@/lib/sup
 import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
+  // Using NextResponse.next() to get a response object that can be modified
   const res = NextResponse.next();
+  const supabase = createSupabaseReqResClient(req, res);
   const { login, password } = await req.json();
 
   let emailToSignIn: string;
 
-  // Check if the login field is an email
   const isEmail = login.includes('@');
 
   if (isEmail) {
     emailToSignIn = login;
   } else {
-    // If not an email, assume it's a username and find the corresponding email.
-    // This requires an admin client to bypass RLS.
     const supabaseAdmin = createSupabaseAdminClient();
     const { data: user, error: findError } = await supabaseAdmin
       .from('users')
-      .select('id') // We need to select a column, id is fine.
+      .select('id')
       .eq('username', login)
       .single();
 
@@ -26,18 +25,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 400 });
     }
 
-    // Now get the email from the auth.users table using the user id
     const { data: authUser, error: authUserError } = await supabaseAdmin.auth.admin.getUserById(user.id);
 
     if (authUserError || !authUser.user.email) {
-        return NextResponse.json({ error: 'Could not find user email' }, { status: 500 });
+      return NextResponse.json({ error: 'Could not find user email' }, { status: 500 });
     }
     
     emailToSignIn = authUser.user.email;
   }
 
-  // Now, attempt to sign in with the determined email
-  const supabase = createSupabaseReqResClient(req, res);
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email: emailToSignIn,
     password,
@@ -47,5 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: signInError.message }, { status: 400 });
   }
 
-  return NextResponse.json({ message: 'Success!' }, { status: 200 });
+  // The `res` object now has the session cookie set by the Supabase client.
+  // We return this response to the browser.
+  return res;
 }
