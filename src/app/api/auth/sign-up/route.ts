@@ -35,6 +35,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Could not create user profile.' }, { status: 500 });
   }
 
-  // Return the original response object, maintaining consistency
-  return res;
+  // Return a JSON response while preserving the headers from the original response
+  return new NextResponse(JSON.stringify({ message: 'Success! Please check your email to confirm.' }), {
+    status: 200,
+    headers: res.headers,
+  });
 }
