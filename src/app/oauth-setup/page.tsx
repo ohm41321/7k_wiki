@@ -15,14 +15,14 @@ export default function OAuthSetupPage() {
             <p>Follow these steps to enable Google and Discord OAuth for your Fonzu Wiki:</p>
 
             <h3>1. Google OAuth Setup</h3>
-            <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-4 mb-4">
-              <h4 className="text-green-400 font-semibold mb-2">✅ Google Credentials Already Available</h4>
-              <div className="text-sm text-green-300 space-y-1">
-                <p><strong>Client ID:</strong> <code className="bg-black/30 px-2 py-1 rounded">266203124748-sf9s989b8l4p891f2cp5cldo4iqrc7bc.apps.googleusercontent.com</code></p>
-                <p><strong>Client Secret:</strong> <code className="bg-black/30 px-2 py-1 rounded">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</code></p>
+            <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-4 mb-4">
+              <h4 className="text-amber-400 font-semibold mb-2">📋 Google OAuth Credentials</h4>
+              <div className="text-sm text-amber-300 space-y-2">
+                <p><strong>Client ID:</strong> <span className="bg-black/30 px-2 py-1 rounded text-xs font-mono">Get from Google Cloud Console</span></p>
+                <p><strong>Client Secret:</strong> <span className="bg-black/30 px-2 py-1 rounded text-xs font-mono">Get from Google Cloud Console</span></p>
+                <p className="text-yellow-400 text-xs mt-2">ℹ️ <strong>Note:</strong> Credentials are available in your Google Cloud Console. See steps below.</p>
               </div>
             </div>
-            <p className="text-yellow-400 text-sm mb-4">⚠️ <strong>Security Note:</strong> These credentials are for development only. Create separate credentials for production.</p>
             <ol>
               <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-secondary">Google Cloud Console</a></li>
               <li>Create a new project or select existing one</li>
@@ -30,7 +30,7 @@ export default function OAuthSetupPage() {
               <li>Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"</li>
               <li>Set Application type to "Web application"</li>
               <li>Add authorized redirect URI: <code>https://kdqigyxovetdghziplrb.supabase.co/auth/v1/callback</code></li>
-              <li>Use the credentials above, or copy your new Client ID and Client Secret</li>
+              <li>Copy your Client ID and Client Secret</li>
             </ol>
 
             <h3>2. Discord OAuth Setup</h3>
@@ -50,8 +50,8 @@ export default function OAuthSetupPage() {
                 <li>2. <strong>Enable Google Provider:</strong>
                   <ul className="ml-4 mt-1 space-y-1">
                     <li>• Toggle "Enable sign in with Google" ON</li>
-                    <li>• Client ID: <code className="bg-black/30 px-1 rounded">266203124748-sf9s989b8l4p891f2cp5cldo4iqrc7bc.apps.googleusercontent.com</code></li>
-                    <li>• Client Secret: <code className="bg-black/30 px-1 rounded">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</code></li>
+                    <li>• Client ID: Paste your Google Client ID from step 1</li>
+                    <li>• Client Secret: Paste your Google Client Secret from step 1</li>
                   </ul>
                 </li>
                 <li>3. <strong>Enable Discord Provider:</strong> (Set up Discord app first, then enter credentials)</li>
@@ -93,6 +93,14 @@ export default function OAuthSetupPage() {
                 <h4 className="font-semibold text-secondary">"Redirect URI mismatch"</h4>
                 <p className="text-sm text-textLight/80">Make sure the redirect URI in provider settings matches Supabase callback URL</p>
               </div>
+            </div>
+
+            <div className="bg-green-900/20 border border-green-600/30 rounded-lg p-4 mb-6">
+              <h4 className="text-green-400 font-semibold mb-2">📄 Credentials File</h4>
+              <p className="text-green-300 text-sm">
+                Google OAuth credentials are saved in <code className="bg-black/30 px-2 py-1 rounded">.google-oauth-credentials.txt</code> (not committed to git for security).
+                Copy the Client ID and Client Secret from that file when configuring Supabase.
+              </p>
             </div>
 
             <div className="text-center mt-8 space-y-4">
