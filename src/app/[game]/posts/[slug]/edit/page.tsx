@@ -4,11 +4,11 @@ import { createSupabaseServerComponentClient } from "@/lib/supabase/utils";
 import { cookies } from "next/headers";
 
 type PageProps = {
-  params: { slug: string };
+  params: { slug: string; game: string };
 };
 
 export default async function EditPostPage({ params }: PageProps) {
-  const { slug } = params;
+  const { slug, game } = params;
   const supabase = createSupabaseServerComponentClient(cookies());
 
   // Fetch post and user session in parallel
@@ -43,7 +43,7 @@ export default async function EditPostPage({ params }: PageProps) {
   return (
     <main className="max-w-4xl mx-auto px-4 py-8 text-white">
       <h1 className="text-3xl font-bold mb-6 text-secondary">Edit Post</h1>
-      <EditPostForm post={post} />
+      <EditPostForm post={post} game={game} />
     </main>
   );
 }

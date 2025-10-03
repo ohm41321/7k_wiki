@@ -28,9 +28,10 @@ interface EditPostFormProps {
     tags: string[];
     imageUrls?: string[];
   };
+  game: string;
 }
 
-export default function EditPostForm({ post }: EditPostFormProps) {
+export default function EditPostForm({ post, game }: EditPostFormProps) {
   const router = useRouter();
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -145,7 +146,7 @@ export default function EditPostForm({ post }: EditPostFormProps) {
     toast.promise(promise(), {
       loading: 'Deleting post...',
       success: () => {
-        router.push('/7k-re-fonzu');
+        router.push(`/${game}`);
         router.refresh();
         return `Post has been deleted.`;
       },
@@ -202,7 +203,7 @@ export default function EditPostForm({ post }: EditPostFormProps) {
     toast.promise(promise(), {
       loading: 'Saving changes...',
       success: (data) => {
-        router.push(`/7k-re-fonzu/posts/${post.slug}`);
+        router.push(`/${game}`);
         router.refresh();
         return `Post "${data.title}" has been updated.`;
       },

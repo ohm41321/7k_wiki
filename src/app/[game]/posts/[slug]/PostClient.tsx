@@ -211,11 +211,11 @@ export default function PostClient({ post }: PostClientProps) {
         />
       )}
       {post.game && <Link href={`/${post.game}`}>
-        <span className="fixed top-20 left-8 z-40 bg-secondary hover:bg-accent text-white font-bold py-3 px-4 rounded-full shadow-lg transition-transform duration-200 ease-in-out hover:scale-105 flex items-center gap-2 cursor-pointer">
+        <span className="fixed top-20 left-8 z-40 bg-secondary hover:bg-accent text-white py-2 px-3 rounded-md shadow-lg transition-transform duration-200 ease-in-out hover:scale-105 flex items-center gap-2 cursor-pointer text-sm">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
-          <span>กลับไปหน้ารวมโพสต์</span>
+          <span>ย้อนกลับ</span>
         </span>
       </Link>}
     </div>
