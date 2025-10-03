@@ -1,6 +1,8 @@
 import { createSupabaseReqResClient, createSupabaseAdminClient } from '@/lib/supabase/utils';
 import { type NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'nodejs'; // Force Node.js runtime
+
 export async function POST(req: NextRequest) {
   // Check for required environment variables
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
