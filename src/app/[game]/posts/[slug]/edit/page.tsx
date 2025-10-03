@@ -1,16 +1,21 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/lib/auth";
 import { getPostBySlug } from "@/app/lib/posts";
 import EditPostForm from "@/app/components/EditPostForm";
+import { createSupabaseServerComponentClient } from "@/lib/supabase/utils";
+import { cookies } from "next/headers";
 
 type PageProps = {
-  params: Promise<{ slug: string }>;
+  params: { slug: string };
 };
 
 export default async function EditPostPage({ params }: PageProps) {
-  const { slug } = await params;
-  const session = await getServerSession(authOptions);
-  const post = getPostBySlug(slug);
+  const { slug } = params;
+  const supabase = createSupabaseServerComponentClient(cookies());
+
+  // Fetch post and user session in parallel
+  const [post, { data: { user } }] = await Promise.all([
+    getPostBySlug(slug),
+    supabase.auth.getUser(),
+  ]);
 
   if (!post) {
     return (
@@ -22,8 +27,8 @@ export default async function EditPostPage({ params }: PageProps) {
     );
   }
 
-  // Authorization check
-  if (!session || session.user?.name?.toLowerCase() !== post.author?.toLowerCase()) {
+  // Authorization check: user must be logged in and be the author of the post
+  if (!user || user.id !== post.author_id) {
     return (
       <main className="max-w-4xl mx-auto px-4 py-8 text-white">
         <div className="text-center">
@@ -34,6 +39,7 @@ export default async function EditPostPage({ params }: PageProps) {
     );
   }
 
+  // The post object from getPostBySlug is already in the correct format for the form
   return (
     <main className="max-w-4xl mx-auto px-4 py-8 text-white">
       <h1 className="text-3xl font-bold mb-6 text-secondary">Edit Post</h1>

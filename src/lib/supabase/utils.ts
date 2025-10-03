@@ -2,19 +2,6 @@ import { createBrowserClient, createServerClient, type CookieOptions } from '@su
 import { type ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import { type NextRequest, NextResponse } from 'next/server'
 
-export const createSupabaseServerClient = (cookieStore: ReturnType<typeof import('cookies-next').getCookie>) => {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
-}
 
 export const createSupabaseReqResClient = (req: NextRequest, res: NextResponse) => {
   return createServerClient(
@@ -78,7 +65,7 @@ import { createClient } from '@supabase/supabase-js'
 import { type Database } from './types'
 
 export const createSupabaseAdminClient = () => {
-  return createClient<Database>(
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {

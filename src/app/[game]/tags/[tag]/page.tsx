@@ -4,25 +4,21 @@ import { getPosts } from '@/app/lib/posts';
 import Reveal from '@/app/components/Reveal';
 import banner from '@/pic/noname_feature.jpg';
 
-interface PostData {
-  slug: string;
-  title: string;
-  date: string;
-  author: string;
-  category: string;
-  tags: string[];
-  imageUrls?: string[];
-  game: string;
-}
+// No longer need PostData interface
 
 type PageProps = {
   params: { game: string; tag: string };
 };
 
-export default function TagPage({ params }: PageProps) {
+export default async function TagPage({ params }: PageProps) {
   const { game, tag } = params;
-  const gamePosts: PostData[] = getPosts({ game });
-  const posts = gamePosts.filter(post => post.tags.map(t => t.toLowerCase()).includes(tag.toLowerCase()));
+  
+  // Await and filter posts
+  const allPosts = await getPosts();
+  const posts = allPosts.filter(post => 
+    post.game === game && 
+    post.tags?.map((t: string) => t.toLowerCase()).includes(tag.toLowerCase())
+  );
 
   const formatDateThai = (iso: string) => {
     const d = new Date(iso);
@@ -76,7 +72,7 @@ export default function TagPage({ params }: PageProps) {
                   )}
                   <h3 className="mb-2 mt-1 text-xl font-bold tracking-tight text-secondary group-hover:text-accent transition-colors">{post.title}</h3>
                   <p className="font-normal text-textLight text-sm" suppressHydrationWarning>
-                    By {post.author} on {formatDateThai(post.date)} เวลา {formatTimeThai(post.date)}
+                    By {post.author?.username || 'Unknown'} on {formatDateThai(post.created_at)} เวลา {formatTimeThai(post.created_at)}
                   </p>
                 </div>
               </Link>

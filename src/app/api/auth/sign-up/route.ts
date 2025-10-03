@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.next();
   // Use the standard client for user-facing auth operations
   const supabase = createSupabaseReqResClient(req, res);
-  const { email, password, username } = await req.json();
+  const { email, password, username }: { [key: string]: string } = await req.json();
 
   // First, sign up the user in Supabase Auth
   const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -30,10 +30,10 @@ export async function POST(req: NextRequest) {
   // Use the admin client to securely insert into the public.users table
   // This bypasses RLS policies, which is necessary because the user is not yet logged in.
   const supabaseAdmin = createSupabaseAdminClient();
-  const { error: userError } = await supabaseAdmin.from('users').insert({
+  const { error: userError } = await supabaseAdmin.from('users').insert([{
     id: authData.user.id,
     username,
-  });
+  }]);
 
   if (userError) {
     // If creating the user profile fails, you might want to delete the auth user

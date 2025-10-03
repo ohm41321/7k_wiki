@@ -20,19 +20,13 @@ const gameDetails: { [key: string]: { title: string; banner: any } } = {
   },
 };
 
-interface PostData {
-  slug: string;
-  title: string;
-  date: string;
-  author: string;
-  category: string;
-  tags: string[];
-  imageUrls?: string[];
-  game: string;
-}
+// No longer need PostData interface, type will be inferred from getPosts()
 
 export default async function GamePage({ params }: { params: { game: string } }) {
-  const posts: PostData[] = getPosts({ game: params.game });
+  // Await and filter posts
+  const allPosts = await getPosts();
+  const posts = allPosts.filter(post => post.game === params.game);
+
   const details = gameDetails[params.game] || { title: params.game, banner: genericBanner };
 
   const formatDateThai = (iso: string) => {
@@ -115,7 +109,7 @@ export default async function GamePage({ params }: { params: { game: string } })
                   </Link>
 
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {post.tags?.map((tag) => (
+                    {post.tags?.map((tag: string) => (
                       <Link href={`/${params.game}/tags/${tag.toLowerCase()}`} key={tag} className="text-xs bg-gray-700 text-textLight px-2 py-1 rounded-md hover:bg-gray-600 transition-colors">
                         #{tag}
                       </Link>
@@ -123,7 +117,7 @@ export default async function GamePage({ params }: { params: { game: string } })
                   </div>
 
                   <p className="font-normal text-textLight text-sm" suppressHydrationWarning>
-                    By {post.author} on {formatDateThai(post.date)} เวลา {formatTimeThai(post.date)}
+                    By {post.author?.username || 'Unknown'} on {formatDateThai(post.created_at)} เวลา {formatTimeThai(post.created_at)}
                   </p>
                 </div>
               </div>
