@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
-  const [login, setLogin] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function LoginPage() {
     const res = await fetch('/api/auth/sign-in', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ login, password }),
+      body: JSON.stringify({ email, password }),
     });
 
     setLoading(false);
@@ -37,11 +37,11 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold text-center text-secondary">Login</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block mb-2 text-sm font-medium text-textLight">Username or Email</label>
+            <label className="block mb-2 text-sm font-medium text-textLight">Email</label>
             <input
-              type="text"
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-3 py-2 text-black bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
               disabled={loading}
