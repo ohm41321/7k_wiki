@@ -2,6 +2,11 @@ import { createSupabaseReqResClient, createSupabaseAdminClient } from '@/lib/sup
 import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
+  // Check for required environment variables
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json({ error: 'Server configuration error: Missing Supabase environment variables.' }, { status: 500 });
+  }
+
   const res = NextResponse.next();
   const supabase = createSupabaseReqResClient(req, res);
   const { email, password, username }: { [key: string]: string } = await req.json();
