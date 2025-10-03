@@ -10,37 +10,10 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkBreaks from 'remark-breaks';
 import { toast } from 'sonner';
-import { createSupabaseBrowserClient } from '@/lib/supabase/utils';
-import type { User } from '@supabase/supabase-js';
-
-const customSchema = {
-  ...defaultSchema,
-  protocols: {
-    ...defaultSchema.protocols,
-    src: [...(defaultSchema.protocols?.src || []), 'blob', 'data'],
-  },
-};
-
-// Custom hook to get the current Supabase user
-function useSupabaseUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = createSupabaseBrowserClient();
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
-    };
-    getUser();
-  }, [supabase]);
-
-  return { user, loading };
-}
+import { useAuth } from '@/app/lib/use-auth';
 
 export default function CreatePostModal() {
-  const { user, loading: userLoading } = useSupabaseUser();
+  const { user, loading: userLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const game = searchParams.get('game');

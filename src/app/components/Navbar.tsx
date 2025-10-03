@@ -3,72 +3,19 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { createSupabaseBrowserClient } from '@/lib/supabase/utils';
-import type { User } from '@supabase/supabase-js';
-import Search from './Search';
-
-// Custom hook to manage Supabase auth state
-function useSupabaseAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{ username: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = createSupabaseBrowserClient();
-  const router = useRouter();
-
-  useEffect(() => {
-    const getSessionAndProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('username')
-          .eq('id', session.user.id)
-          .single();
-        setProfile(userProfile);
-      }
-      setLoading(false);
-    };
-
-    getSessionAndProfile();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('username')
-          .eq('id', session.user.id)
-          .single();
-        setProfile(userProfile);
-      } else {
-        setProfile(null); // Clear profile on logout
-      }
-      setLoading(false);
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        router.refresh();
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase, router]);
-
-  const handleSignOut = async () => {
-    await fetch('/api/auth/sign-out', { method: 'POST' });
-  };
-
-  return { user, profile, loading, handleSignOut };
-}
+import { useAuth } from '@/app/lib/use-auth';
 
 const Navbar = () => {
-  const { user, profile, loading, handleSignOut } = useSupabaseAuth();
+  const { user, profile, loading } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const supabase = createSupabaseBrowserClient();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   useEffect(() => {
     const handleScroll = () => {
