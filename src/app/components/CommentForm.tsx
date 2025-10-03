@@ -1,12 +1,29 @@
-
 'use client';
 
-import { useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 import { mutate } from 'swr';
+import { createSupabaseBrowserClient } from '@/lib/supabase/utils';
+import type { User } from '@supabase/supabase-js';
+
+function useCurrentUser() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createSupabaseBrowserClient();
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setLoading(false);
+    };
+    getCurrentUser();
+  }, [supabase]);
+
+  return { user, loading };
+}
 
 export default function CommentForm({ slug }: { slug: string }) {
-  const { data: session } = useSession();
+  const { user, loading } = useCurrentUser();
   const [content, setContent] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -14,13 +31,15 @@ export default function CommentForm({ slug }: { slug: string }) {
 
     if (!content.trim()) return;
 
-    const res = await fetch(`/api/comments/${slug}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ content, author: session?.user?.name || 'Anonymous' }),
-    });
+    const res = await fetch(`/api/comments/${slug}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }), // Author is now handled by the server via session
+      }
+    );
 
     if (res.ok) {
       setContent('');
@@ -28,7 +47,11 @@ export default function CommentForm({ slug }: { slug: string }) {
     }
   };
 
-  if (!session) {
+  if (loading) {
+    return <p>Loading...</p>;
+  }
+
+  if (!user) {
     return <p>Please log in to comment.</p>;
   }
 

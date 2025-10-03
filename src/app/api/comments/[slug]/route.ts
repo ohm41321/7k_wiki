@@ -1,19 +1,10 @@
-'use client';
+import { createSupabaseReqResClient } from '@/lib/supabase/utils';
+import { type NextRequest, NextResponse } from 'next/server';
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-// IMPORTANT: Use service_role key for server-side operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-/**
- * GET handler to fetch comments for a specific post slug.
- */
-export async function GET(request: NextRequest, { params }: { params: { slug: string } }) {
+// GET handler to fetch comments for a specific post slug.
+export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+  const res = NextResponse.next();
+  const supabase = createSupabaseReqResClient(req, res);
   const { slug } = params;
 
   if (!slug) {
@@ -21,14 +12,25 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
   }
 
   try {
+    // First, get the post ID from the slug
+    const { data: post, error: postError } = await supabase
+      .from('posts')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+
+    if (postError || !post) {
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+    }
+
+    // Then, fetch comments for that post ID
     const { data, error } = await supabase
       .from('comments')
-      .select('*')
-      .eq('post_slug', slug)
+      .select('*, author:users(username)') // Join with users table to get username
+      .eq('post_id', post.id)
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Supabase GET error:', error);
       throw error;
     }
 
@@ -39,31 +41,45 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
   }
 }
 
-/**
- * POST handler to create a new comment for a specific post slug.
- */
-export async function POST(request: NextRequest, { params }: { params: { slug: string } }) {
+// POST handler to create a new comment for a specific post slug.
+export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+  const res = NextResponse.next();
+  const supabase = createSupabaseReqResClient(req, res);
   const { slug } = params;
-  
+
   if (!slug) {
     return NextResponse.json({ error: 'Post slug is required' }, { status: 400 });
   }
 
   try {
-    const { content, author } = await request.json();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return new NextResponse(JSON.stringify({ message: 'Unauthorized' }), { status: 401 });
+    }
 
-    if (!content || !author) {
-      return NextResponse.json({ error: 'Missing content or author' }, { status: 400 });
+    const { content } = await req.json();
+    if (!content) {
+      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
+    }
+
+    // Get the post ID from the slug
+    const { data: post, error: postError } = await supabase
+      .from('posts')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+
+    if (postError || !post) {
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
     const { data, error } = await supabase
       .from('comments')
-      .insert([{ post_slug: slug, author, content }])
-      .select()
-      .single(); // .single() returns a single object instead of an array
+      .insert([{ post_id: post.id, user_id: user.id, content }])
+      .select('*, author:users(username)')
+      .single();
 
     if (error) {
-      console.error('Supabase POST error:', error);
       throw error;
     }
 

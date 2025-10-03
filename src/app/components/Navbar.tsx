@@ -2,17 +2,63 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { usePathname } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { createSupabaseBrowserClient } from '@/lib/supabase/utils';
+import type { User } from '@supabase/supabase-js';
 import Search from './Search';
 
+// Custom hook to manage Supabase auth state
+function useSupabaseAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createSupabaseBrowserClient();
+  const router = useRouter();
+
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
+
+    getSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+      // Refresh the page on sign-in or sign-out to update server-side rendered content
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        router.refresh();
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase, router]);
+
+  const handleSignOut = async () => {
+    await fetch('/api/auth/sign-out', { method: 'POST' });
+    // The onAuthStateChange listener will handle the rest
+  };
+
+  return { user, loading, handleSignOut };
+}
+
 const Navbar = () => {
-  const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const { user, loading, handleSignOut } = useSupabaseAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -56,12 +102,13 @@ const Navbar = () => {
               Home
             </Link>
             
-            {status === 'loading' ? (
+            {loading ? (
               <div className="text-textLight">Loading...</div>
-            ) : status === 'authenticated' ? (
+            ) : user ? (
               <div className="relative" ref={userMenuRef}>
                 <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center space-x-2 text-yellow-300 hover:text-yellow-100 transition-colors">
-                  <span>{session.user?.name}</span>
+                  {/* We don't have the username here yet, we'll add it later */}
+                  <span>{user.email}</span>
                   <svg className={`h-5 w-5 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -69,7 +116,7 @@ const Navbar = () => {
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-700">
                     <button 
-                      onClick={() => { signOut(); setIsUserMenuOpen(false); }}
+                      onClick={() => { handleSignOut(); setIsUserMenuOpen(false); }}
                       className="block w-full text-left px-4 py-2 text-sm text-textLight hover:bg-gray-700 transition-colors"
                     >
                       Logout
@@ -113,15 +160,15 @@ const Navbar = () => {
               Home
             </Link>
             
-            {status === 'loading' ? (
+            {loading ? (
               <div className="text-textLight px-3 py-2">Loading...</div>
-            ) : status === 'authenticated' ? (
+            ) : user ? (
               <>
                 <div className="px-3 py-2">
-                  <span className="text-yellow-300">Welcome, {session.user?.name}</span>
+                  <span className="text-yellow-300">Welcome, {user.email}</span>
                 </div>
                 <button 
-                  onClick={() => signOut()} 
+                  onClick={handleSignOut} 
                   className="text-textLight hover:text-yellow-300 block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors"
                 >
                   Logout

@@ -13,32 +13,53 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { transformForPreview } from '@/lib/markdown';
 
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { createSupabaseBrowserClient } from '@/lib/supabase/utils';
+import type { User } from '@supabase/supabase-js';
 
-interface PostClientProps {
-  post: {
-    slug: string;
-    title: string;
-    date: string;
-    author: string;
-    content: string;
-    category: string;
-    tags: string[];
-    imageUrls?: string[];
-    game: string;
-  };
+// This is a simplified version of the hook from Navbar.tsx
+function useCurrentUser() {
+  const [user, setUser] = useState<User | null>(null);
+  const supabase = createSupabaseBrowserClient();
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getCurrentUser();
+  }, [supabase]);
+
+  return user;
 }
 
+// Define the new Post type based on Supabase query
+type PostAuthor = {
+  username: string;
+} | null;
 
+interface PostType {
+  slug: string;
+  title: string;
+  created_at: string;
+  author: PostAuthor;
+  content: string | null;
+  category: string | null;
+  tags: string[] | null;
+  imageUrls?: string[] | null;
+  game: string | null;
+  author_id: string;
+}
+
+interface PostClientProps {
+  post: PostType;
+}
 
 export default function PostClient({ post }: PostClientProps) {
-  const { data: session } = useSession();
+  const currentUser = useCurrentUser();
   const router = useRouter();
   const [lightbox, setLightbox] = useState<{ images: string[]; startIndex: number } | null>(null);
   const [imageGridView, setImageGridView] = useState(true);
-
-
 
   const formatDateThai = (iso: string) => {
     const d = new Date(iso);
@@ -49,6 +70,8 @@ export default function PostClient({ post }: PostClientProps) {
     const d = new Date(iso);
     return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   };
+
+  const canEdit = currentUser?.id === post.author_id;
 
   return (
     <div className="bg-primary min-h-screen text-textLight">
@@ -68,12 +91,12 @@ export default function PostClient({ post }: PostClientProps) {
               </div>
               <div className="md:w-1/3 md:text-right mt-2 md:mt-0 flex-shrink-0">
                 <p className="text-textLight/80" suppressHydrationWarning>
-                  By <span className="font-semibold text-secondary">{post.author}</span>
+                  By <span className="font-semibold text-secondary">{post.author?.username || 'Unknown'}</span>
                 </p>
                 <p className="text-sm text-textLight/60" suppressHydrationWarning>
-                  {formatDateThai(post.date)} at {formatTimeThai(post.date)}
+                  {formatDateThai(post.created_at)} at {formatTimeThai(post.created_at)}
                 </p>
-                {session?.user?.name === post.author && (
+                {canEdit && (
                   <div className="mt-4">
                     <button 
                       onClick={() => router.push(`/${post.game}/posts/${post.slug}/edit`)}
@@ -84,7 +107,7 @@ export default function PostClient({ post }: PostClientProps) {
                   </div>
                 )}
                 <div className="mt-4 flex flex-wrap gap-2 md:justify-end">
-                  {post.tags.map(tag => (
+                  {post.tags?.map(tag => (
                     <Link href={`/${post.game}/tags/${tag.toLowerCase()}`} key={tag}>
                       <span className="bg-gray-700 text-textLight px-2 py-1 rounded-md text-xs hover:bg-gray-600 transition-colors">#{tag}</span>
                     </Link>
@@ -113,7 +136,7 @@ export default function PostClient({ post }: PostClientProps) {
                     <div 
                       key={index} 
                       className="cursor-pointer relative aspect-video rounded-lg shadow-md overflow-hidden" 
-                      onClick={() => setLightbox({ images: post.imageUrls || [], startIndex: index }) }
+                      onClick={() => setLightbox({ images: post.imageUrls as string[], startIndex: index }) }
                     >
                       <Image
                         src={url}
@@ -131,7 +154,7 @@ export default function PostClient({ post }: PostClientProps) {
                     <div 
                       key={index} 
                       className="cursor-pointer" 
-                      onClick={() => setLightbox({ images: post.imageUrls || [], startIndex: index }) }
+                      onClick={() => setLightbox({ images: post.imageUrls as string[], startIndex: index }) }
                     >
                       <Image
                         src={url}
@@ -154,10 +177,10 @@ export default function PostClient({ post }: PostClientProps) {
               remarkPlugins={[remarkGfm, remarkBreaks]} 
               rehypePlugins={[rehypeRaw]}
             >
-              {transformForPreview(post.content)}
+              {transformForPreview(post.content || '')}
             </ReactMarkdown>
           </div>
-                </article>
+        </article>
 
         <hr className="border-gray-700 my-12" />
 
@@ -174,14 +197,14 @@ export default function PostClient({ post }: PostClientProps) {
           onClose={() => setLightbox(null)}
         />
       )}
-      <Link href={`/${post.game}`}>
+      {post.game && <Link href={`/${post.game}`}>
         <span className="fixed top-20 left-8 z-40 bg-secondary hover:bg-accent text-white font-bold py-3 px-4 rounded-full shadow-lg transition-transform duration-200 ease-in-out hover:scale-105 flex items-center gap-2 cursor-pointer">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
           <span>กลับไปหน้ารวมโพสต์</span>
         </span>
-      </Link>
+      </Link>}
     </div>
   );
 }

@@ -1,34 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function RegisterPage() {
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     const promise = async () => {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch('/api/auth/sign-up', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ username, email, password }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || 'Something went wrong');
+        throw new Error(data.error || 'Something went wrong');
       }
       return { ...await res.json() };
     };
@@ -36,8 +33,7 @@ export default function RegisterPage() {
     toast.promise(promise(), {
       loading: 'Creating account...',
       success: () => {
-        setTimeout(() => router.push('/login'), 1000);
-        return 'Account created successfully! Please login.';
+        return 'Account created! Please check your email to confirm.';
       },
       error: (err) => `Error: ${err.message}`,
       finally: () => setLoading(false),
@@ -53,8 +49,8 @@ export default function RegisterPage() {
             <label className="block mb-2 text-sm font-medium text-textLight">Username</label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               className="w-full px-3 py-2 text-black bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
               disabled={loading}

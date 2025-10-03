@@ -1,18 +1,49 @@
-import { NextResponse } from 'next/server';
-import { createPost } from '@/app/lib/posts';
+import { createSupabaseReqResClient } from '@/lib/supabase/utils';
+import { NextResponse, type NextRequest } from 'next/server';
+import { v4 as uuidv4 } from 'uuid';
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
+  const res = NextResponse.next();
+  const supabase = createSupabaseReqResClient(req, res);
+
   try {
-    const postData = await request.json();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // Add validation for the new 'game' field
-    if (!postData.title || !postData.author || !postData.game) {
-      return new NextResponse(JSON.stringify({ message: 'Missing required fields: title, author, game' }), { status: 400 });
+    if (!user) {
+      return new NextResponse(JSON.stringify({ message: 'Unauthorized' }), { status: 401 });
     }
 
-    const newPost = createPost(postData);
+    const postData = await req.json();
+    const { title, content, tags, game } = postData;
 
-    return NextResponse.json(newPost, { status: 201 });
+    if (!title || !game) {
+      return new NextResponse(JSON.stringify({ message: 'Missing required fields: title, game' }), { status: 400 });
+    }
+
+    // Create a URL-friendly slug from the title
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .slice(0, 50);
+
+    const newPost = {
+      title,
+      content: content || '',
+      tags: (tags || '').split(',').map((tag: string) => tag.trim()).filter(Boolean),
+      game,
+      author_id: user.id,
+      slug: `${slug}-${uuidv4().slice(0, 4)}`, // Add random chars to ensure uniqueness
+    };
+
+    const { data, error } = await supabase.from('posts').insert(newPost).select().single();
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json(data, { status: 201 });
+
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return new NextResponse(JSON.stringify({ message: message || 'Internal Server Error' }), { status: 500 });
