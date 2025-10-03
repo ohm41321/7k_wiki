@@ -44,7 +44,9 @@ export default function CreatePostModal() {
 
   const stageImageForUpload = (file: File) => {
     const blobUrl = URL.createObjectURL(file);
-    const placeholder = `\n![Uploading ${file.name}...}](${blobUrl})\n`;
+    const placeholder = `
+![Uploading ${file.name}...](${blobUrl})
+`;
     setContent(prev => prev + placeholder);
     setStagedFiles(prev => new Map(prev).set(blobUrl, file));
   };
