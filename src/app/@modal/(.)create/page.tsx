@@ -24,167 +24,184 @@ export default function CreatePostModal() {
   const searchParams = useSearchParams();
   const game = searchParams.get('game');
   
-  const [title, setTitle] = useState('');
-  const [authorName, setAuthorName] = useState('');
-  const [tags, setTags] = useState('');
-  const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
-  const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [stagedFiles, setStagedFiles] = useState<Map<string, File>>(new Map());
-
-  useEffect(() => {
-    return () => {
-      stagedFiles.forEach((_, blobUrl) => URL.revokeObjectURL(blobUrl));
+    const [title, setTitle] = useState('');
+    const [tags, setTags] = useState('');
+    const [content, setContent] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
+    const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [stagedFiles, setStagedFiles] = useState<Map<string, File>>(new Map());
+  
+    useEffect(() => {
+      return () => {
+        stagedFiles.forEach((_, blobUrl) => URL.revokeObjectURL(blobUrl));
+      };
+    }, [stagedFiles]);
+  
+    const stageImageForUpload = (file: File) => {
+      const blobUrl = URL.createObjectURL(file);
+      // แก้ไข: ใช้ template literal ที่ถูกต้อง ไม่มี newline
+      const placeholder = `![Uploading ${file.name}...](${blobUrl})`;
+      setContent(prev => prev + '\n' + placeholder + '\n');
+      setStagedFiles(prev => new Map(prev).set(blobUrl, file));
     };
-  }, [stagedFiles]);
-
-  const stageImageForUpload = (file: File) => {
-    const blobUrl = URL.createObjectURL(file);
-    const placeholder = `
-![Uploading ${file.name}...](${blobUrl})
-`;
-    setContent(prev => prev + placeholder);
-    setStagedFiles(prev => new Map(prev).set(blobUrl, file));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      for (const file of Array.from(e.target.files)) {
-        stageImageForUpload(file);
-      }
-      e.target.value = '';
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
-        if (file) {
-          e.preventDefault();
+  
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+        for (const file of Array.from(e.target.files)) {
           stageImageForUpload(file);
-          break;
         }
+        e.target.value = '';
       }
-    }
-  };
-
-  const onEmojiClick = (emojiData: EmojiClickData) => {
-    setContent(prev => prev + emojiData.emoji);
-    setShowEmojiPicker(false);
-  };
-
-  const wrapText = (before: string, after: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-    const newText = `${before}${selectedText || 'text'}${after}`;
-    const newContent = content.substring(0, start) + newText + content.substring(end);
-    setContent(newContent);
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + before.length, start + before.length + (selectedText.length || 'text'.length));
-    }, 0);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return setError('Title is required.');
-    if (!authorName.trim()) return setError('Author name is required.');
-    if (!content.trim()) return setError('Post must have content.');
-    
-    setLoading(true);
-    setError(null);
-
-    const promise = async () => {
-      let finalContent = content;
-      const imageUrls: string[] = [];
-      const uploadPromises: Promise<{ blobUrl: string, finalUrl: string }>[] = [];
-      const markdownImageRegex = /!\\[[^\\]*\]\((blob:[^)]+)\)/g;
-      let match;
-
-      while ((match = markdownImageRegex.exec(content)) !== null) {
-        const blobUrl = match[1];
-        const fileToUpload = stagedFiles.get(blobUrl);
-        if (fileToUpload) {
-          const formData = new FormData();
-          formData.append('file', fileToUpload);
-          const uploadPromise = fetch('/api/upload', { method: 'POST', body: formData })
-            .then(res => res.ok ? res.json() : Promise.reject(new Error('Upload failed')))
-            .then(data => ({ blobUrl, finalUrl: data.url }));
-          uploadPromises.push(uploadPromise);
-        }
-      }
-
-      const settledUploads = await Promise.all(uploadPromises);
-      settledUploads.forEach(({ blobUrl, finalUrl }) => {
-        finalContent = finalContent.replace(new RegExp(blobUrl, 'g'), finalUrl);
-        imageUrls.push(finalUrl);
-      });
-
-      const res = await fetch('/api/posts/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, author_name: authorName, content: finalContent, imageUrls, tags, game }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to create post');
-      }
-      return { ...await res.json() };
     };
-
-    toast.promise(promise(), {
-      loading: 'Creating post...',
-      success: (data) => {
-        router.refresh();
-        setTimeout(() => router.back(), 500);
-        return `Post "${data.title}" has been created.`;
-      },
-      error: (err) => {
-        setError(err.message);
-        return `Error: ${err.message}`;
-      },
-      finally: () => setLoading(false),
-    });
-  };
-
-  return (
-    <Modal>
-      <div className="flex">
-        <div className="flex-grow transition-all duration-300 ease-in-out">
-          <form onSubmit={handleSubmit} className="p-2 sm:p-4">
-            <input
-              type="text"
-              className="block w-full bg-transparent border-0 focus:ring-0 sm:text-lg font-bold text-white placeholder-gray-500 mb-2"
-              placeholder="Post Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              className="block w-full bg-transparent border-0 focus:ring-0 sm:text-sm text-white placeholder-gray-500 mb-2"
-              placeholder="Your Name"
-              value={authorName}
-              onChange={(e) => setAuthorName(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              className="block w-full bg-transparent border-0 focus:ring-0 sm:text-sm text-white placeholder-gray-500 mb-4"
-              placeholder="Tags (comma-separated, e.g., Guide, PvP, Beginner)"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-            />
-            
+  
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            stageImageForUpload(file);
+            break;
+          }
+        }
+      }
+    };
+  
+    const onEmojiClick = (emojiData: EmojiClickData) => {
+      setContent(prev => prev + emojiData.emoji);
+      setShowEmojiPicker(false);
+    };
+  
+    const wrapText = (before: string, after: string) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = content.substring(start, end);
+      const newText = `${before}${selectedText || 'text'}${after}`;
+      const newContent = content.substring(0, start) + newText + content.substring(end);
+      setContent(newContent);
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + before.length, start + before.length + (selectedText.length || 'text'.length));
+      }, 0);
+    };
+  
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!title.trim()) return setError('Title is required.');
+      if (!content.trim()) return setError('Post must have content.');
+      
+      setLoading(true);
+      setError(null);
+  
+      const promise = async () => {
+        let finalContent = content;
+        const imageUrls: string[] = [];
+        
+        // แก้ไข: ใช้ regex ที่รองรับทั้ง single line และ multiline
+        const markdownImageRegex = /!\[([^\]]*)\]\((blob:[^)]+)\)/g;
+        const matches = [...content.matchAll(markdownImageRegex)];
+  
+        // อัปโหลดรูปภาพทั้งหมด
+        for (const match of matches) {
+          const blobUrl = match[2];
+          const fileToUpload = stagedFiles.get(blobUrl);
+          
+          if (fileToUpload) {
+            try {
+              const formData = new FormData();
+              formData.append('file', fileToUpload);
+              
+              const uploadRes = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+              });
+              
+              if (!uploadRes.ok) {
+                const errorData = await uploadRes.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Upload failed');
+              }
+              
+              const data = await uploadRes.json();
+              
+              // แทนที่ blob URL ด้วย URL จริง
+              finalContent = finalContent.replace(blobUrl, data.url);
+              imageUrls.push(data.url);
+              
+              // Cleanup: revoke blob URL หลังอัปโหลดสำเร็จ
+              URL.revokeObjectURL(blobUrl);
+            } catch (uploadError) {
+              console.error('Failed to upload image:', uploadError);
+              throw new Error(`Failed to upload image: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+            }
+          }
+        }
+  
+        // สร้างโพสต์
+        const res = await fetch('/api/posts/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            content: finalContent,
+            imageUrls,
+            tags,
+            game
+          }),
+        });
+  
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to create post');
+        }
+        
+        return await res.json();
+      };
+  
+      toast.promise(promise(), {
+        loading: 'Creating post...',
+        success: (data) => {
+          // Clear staged files
+          setStagedFiles(new Map());
+          router.refresh();
+          setTimeout(() => router.back(), 500);
+          return `Post "${data.title}" has been created.`;
+        },
+        error: (err) => {
+          setLoading(false);
+          setError(err.message);
+          return `Error: ${err.message}`;
+        },
+        finally: () => setLoading(false),
+      });
+    };
+  
+    return (
+      <Modal>
+        <div className="flex">
+          <div className="flex-grow transition-all duration-300 ease-in-out">
+            <form onSubmit={handleSubmit} className="p-2 sm:p-4">
+              <input
+                type="text"
+                className="block w-full bg-transparent border-0 focus:ring-0 sm:text-lg font-bold text-white placeholder-gray-500 mb-2"
+                placeholder="Post Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
+              <input
+                type="text"
+                className="block w-full bg-transparent border-0 focus:ring-0 sm:text-sm text-white placeholder-gray-500 mb-4"
+                placeholder="Tags (comma-separated, e.g., Guide, PvP, Beginner)"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+              />            
             <div className="border-b border-gray-700">
               <nav className="-mb-px flex space-x-4" aria-label="Tabs">
                 <button type="button" onClick={() => setActiveTab('write')} className={`${activeTab === 'write' ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}>Write</button>

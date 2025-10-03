@@ -23,7 +23,7 @@ const gameDetails: { [key: string]: { title: string; banner: any } } = {
 
 export default async function FonzuHub() {
   const allPosts = await getPosts();
-  const games = [...new Set(allPosts.map(post => post.game).filter(Boolean))] as string[];
+  const games = allPosts ? [...new Set(allPosts.map(post => post.game).filter(Boolean))] as string[] : [];
 
   return (
     <div className="text-textLight">

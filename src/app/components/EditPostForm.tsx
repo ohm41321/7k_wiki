@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,6 +10,7 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkBreaks from 'remark-breaks';
 import { toast } from 'sonner';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
+import type { User } from '@supabase/supabase-js';
 
 const customSchema = {
   ...defaultSchema,
@@ -30,14 +31,19 @@ interface EditPostFormProps {
 }
 
 export default function EditPostForm({ post }: EditPostFormProps) {
-  const { data: session, status } = useSession();
   const router = useRouter();
-  
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   const [title, setTitle] = useState(post.title);
   const [tags, setTags] = useState(post.tags.join(', '));
   const [content, setContent] = useState(post.content);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -53,10 +59,28 @@ export default function EditPostForm({ post }: EditPostFormProps) {
   }, [stagedFiles]);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setAuthLoading(false);
+    };
+    getUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase.auth]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth');
     }
-  }, [status, router]);
+  }, [user, authLoading, router]);
 
   const stageImageForUpload = (file: File) => {
     const blobUrl = URL.createObjectURL(file);
@@ -192,8 +216,12 @@ export default function EditPostForm({ post }: EditPostFormProps) {
     });
   };
   
-  if (status === 'loading') {
+  if (authLoading) {
     return <div className="text-center">Loading...</div>;
+  }
+
+  if (!user) {
+    return <div className="text-center">Please log in to edit this post.</div>;
   }
 
   return (

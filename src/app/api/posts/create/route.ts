@@ -10,12 +10,17 @@ export async function POST(req: NextRequest) {
   const supabase = createSupabaseServerComponentClient(cookieStore);
 
   try {
-    const postData = await req.json();
-    // We now expect author_name instead of relying on a session
-    const { title, content, tags, game, author_name } = postData;
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!title || !game || !author_name) {
-      return NextResponse.json({ message: 'Missing required fields: title, game, author_name' }, { status: 400 });
+    if (!user) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const postData = await req.json();
+    const { title, content, tags, game, imageUrls } = postData;
+
+    if (!title || !game) {
+      return NextResponse.json({ message: 'Missing required fields: title, game' }, { status: 400 });
     }
 
     const slug = title
@@ -29,8 +34,10 @@ export async function POST(req: NextRequest) {
       content: content || '',
       tags: (tags || '').split(',').map((tag: string) => tag.trim()).filter(Boolean),
       game,
-      author_name: author_name, // Save the provided author name
+      author_id: user.id, // Set author_id from the authenticated user
+      author_name: user.user_metadata.full_name || user.email, // Use user metadata for name
       slug: `${slug}-${uuidv4().slice(0, 4)}`,
+      imageurls: imageUrls || [],
     };
 
     const { data, error } = await supabase.from('posts').insert(newPost).select().single();

@@ -14,15 +14,15 @@ import remarkBreaks from 'remark-breaks';
 import { transformForPreview } from '@/lib/markdown';
 
 import { useRouter } from 'next/navigation';
-import { createSupabaseBrowserClient } from '@/lib/supabase/utils';
+import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
-// This is a simplified version of the hook from Navbar.tsx
 interface PostType {
   slug: string;
   title: string;
   created_at: string;
-  author_name: string | null; // Changed from author object to author_name string
+  author_id: string | null;
+  author_name: string | null;
   content: string | null;
   category: string | null;
   tags: string[] | null;
@@ -38,6 +38,19 @@ export default function PostClient({ post }: PostClientProps) {
   const router = useRouter();
   const [lightbox, setLightbox] = useState<{ images: string[]; startIndex: number } | null>(null);
   const [imageGridView, setImageGridView] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+    };
+    fetchUser();
+  }, [supabase.auth]);
 
   const formatDateThai = (iso: string) => {
     const d = new Date(iso);
@@ -49,8 +62,23 @@ export default function PostClient({ post }: PostClientProps) {
     return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   };
 
-  // No edit button in anonymous mode
-  const canEdit = false;
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this post?')) {
+      const response = await fetch(`/api/posts/${post.slug}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        router.push(`/${post.game}`);
+        router.refresh();
+      } else {
+        const data = await response.json();
+        alert(`Error: ${data.message}`);
+      }
+    }
+  };
+
+  const canEdit = user && user.id === post.author_id;
 
   return (
     <div className="bg-primary min-h-screen text-textLight">
@@ -76,12 +104,18 @@ export default function PostClient({ post }: PostClientProps) {
                   {formatDateThai(post.created_at)} at {formatTimeThai(post.created_at)}
                 </p>
                 {canEdit && (
-                  <div className="mt-4">
+                  <div className="mt-4 flex gap-2 justify-end">
                     <button 
                       onClick={() => router.push(`/${post.game}/posts/${post.slug}/edit`)}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md text-sm transition-colors"
                     >
-                      Edit Post
+                      Edit
+                    </button>
+                    <button 
+                      onClick={handleDelete}
+                      className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-sm transition-colors"
+                    >
+                      Delete
                     </button>
                   </div>
                 )}
@@ -106,7 +140,7 @@ export default function PostClient({ post }: PostClientProps) {
                   onClick={() => setImageGridView(!imageGridView)}
                   className="px-4 py-2 bg-gray-700 text-textLight rounded-md hover:bg-gray-600 transition-colors text-sm"
                 >
-                  {imageGridView ? 'View Original Sizes' : 'View Grid'}
+                  {imageGridView ? 'View Grid' : 'View Original Sizes'}
                 </button>
               </div>
               {imageGridView ? (

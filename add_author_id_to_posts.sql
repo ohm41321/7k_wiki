@@ -1,0 +1,1 @@
+ALTER TABLE public.posts ADD COLUMN author_id UUID REFERENCES auth.users(id);

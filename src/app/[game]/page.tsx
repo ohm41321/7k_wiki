@@ -3,8 +3,6 @@ import Image from 'next/image';
 import { getPosts } from '@/app/lib/posts';
 import Reveal from '@/app/components/Reveal';
 import HeroBackground from '@/app/components/HeroBackground';
-
-import banner7k from '@/pic/7k_banner.webp';
 import lostswordBanner from '@/pic/lostsword_thumnail.png';
 import genericBanner from '@/pic/noname_feature.jpg';
 
@@ -77,9 +75,9 @@ export default async function GamePage({ params }: { params: { game: string } })
               <div className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl group">
                 <Link href={`/${params.game}/posts/${post.slug}`}>
                   <div className="relative w-full aspect-[16/9] overflow-hidden">
-                    {post.imageUrls && post.imageUrls.length > 0 ? (
+                    {post.imageurls && post.imageurls.length > 0 ? (
                       <Image 
-                        src={post.imageUrls[0]} 
+                        src={post.imageurls[0]} 
                         alt={post.title} 
                         fill
                         style={{ objectFit: 'cover' }} 

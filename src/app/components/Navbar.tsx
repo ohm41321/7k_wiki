@@ -3,18 +3,77 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import Search from './Search';
+import { createBrowserClient } from '@supabase/ssr';
+import type { User } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
+
+    getSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase.auth]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+    setUser(null);
+  };
+
+  const renderAuthButtons = () => {
+    if (loading) return <div className="w-24 h-8 bg-gray-700 rounded animate-pulse"></div>;
+
+      return user ? (
+      <div className="flex items-center gap-4">
+        <span className="text-textLight text-sm hidden sm:block">{user.email}</span>
+        <button 
+          onClick={handleLogout} 
+          className="text-textLight bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          Logout
+        </button>
+      </div>
+    ) : (
+      <div className="flex items-center gap-2">
+        <Link href="/auth?view=sign_in" className="text-textLight bg-accent hover:bg-yellow-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+          Login
+        </Link>
+        <Link href="/auth?view=sign_up" className="text-textLight bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+          Register
+        </Link>
+      </div>
+    );
+  };
 
   return (
     <nav 
@@ -39,10 +98,11 @@ const Navbar = () => {
             <Link href="/" className="text-textLight hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Home
             </Link>
+            {renderAuthButtons()}
           </div>
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
-            <button onClick={() => setIsOpen(!isOpen)} className="text-textLight hover:text-yellow-300 focus:outline-none">
+             <button onClick={() => setIsOpen(!isOpen)} className="text-textLight hover:text-yellow-300 focus:outline-none">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {isOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -64,6 +124,9 @@ const Navbar = () => {
             <Link href="/" className="text-textLight hover:text-yellow-300 block px-3 py-2 rounded-md text-base font-medium transition-colors">
               Home
             </Link>
+            <div className="px-3 py-2">
+              {renderAuthButtons()}
+            </div>
           </div>
         </div>
       )}
