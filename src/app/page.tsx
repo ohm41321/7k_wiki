@@ -5,8 +5,8 @@ import FonzuHubBackground from '@/app/components/FonzuHubBackground';
 import { getPosts } from '@/app/lib/posts';
 import banner7k from '@/pic/7k_banner.webp';
 import genericBanner from '@/pic/noname_feature.jpg';
-
 import lostswordBanner from '@/pic/lostsword_thumnail.png';
+import AuthSuccessMessage from '@/app/components/AuthSuccessMessage';
 
 // Define a mapping for game-specific details
 const gameDetails: { [key: string]: { title: string; banner: any } } = {
@@ -27,6 +27,8 @@ export default async function FonzuHub() {
 
   return (
     <div className="text-textLight">
+      <AuthSuccessMessage />
+
       {/* Hero Section */}
       <div className="relative h-[75vh] min-h-[600px] flex items-center justify-center text-center overflow-hidden">
         <FonzuHubBackground />

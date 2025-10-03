@@ -6,6 +6,12 @@ import type { NextRequest } from 'next/server';
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const error = requestUrl.searchParams.get('error');
+
+  if (error) {
+    console.error('OAuth error:', error);
+    return NextResponse.redirect(`${requestUrl.origin}/auth?error=${error}`);
+  }
 
   if (code) {
     const supabase = createServerClient(
@@ -42,6 +48,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(requestUrl.origin);
+  // Redirect to home page with success message
+  return NextResponse.redirect(`${requestUrl.origin}/?auth=success`);
 }

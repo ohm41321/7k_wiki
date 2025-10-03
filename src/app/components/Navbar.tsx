@@ -12,6 +12,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAuthDropdown, setShowAuthDropdown] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,6 +45,18 @@ const Navbar = () => {
     };
   }, [supabase.auth]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showAuthDropdown && !(event.target as Element).closest('.auth-dropdown')) {
+        setShowAuthDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAuthDropdown]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
@@ -53,24 +66,76 @@ const Navbar = () => {
   const renderAuthButtons = () => {
     if (loading) return <div className="w-24 h-8 bg-gray-700 rounded animate-pulse"></div>;
 
-      return user ? (
+    return user ? (
       <div className="flex items-center gap-4">
         <span className="text-textLight text-sm hidden sm:block">{user.email}</span>
-        <button 
-          onClick={handleLogout} 
+        <button
+          onClick={handleLogout}
           className="text-textLight bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
         >
           Logout
         </button>
       </div>
     ) : (
-      <div className="flex items-center gap-2">
-        <Link href="/auth?view=sign_in" className="text-textLight bg-accent hover:bg-yellow-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-          Login
-        </Link>
-        <Link href="/auth?view=sign_up" className="text-textLight bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-          Register
-        </Link>
+      <div className="relative">
+        <button
+          onClick={() => setShowAuthDropdown(!showAuthDropdown)}
+          className="flex items-center gap-2 text-textLight bg-gradient-to-r from-secondary to-accent hover:from-accent hover:to-secondary px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          Account
+          <svg
+            className={`w-4 h-4 transition-transform duration-200 ${showAuthDropdown ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {showAuthDropdown && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setShowAuthDropdown(false)}
+            ></div>
+
+            {/* Dropdown */}
+            <div className="auth-dropdown absolute right-0 mt-2 w-48 bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-700/50 z-20">
+              <div className="py-2">
+                <Link
+                  href="/auth?view=sign_in"
+                  className="flex items-center gap-3 px-4 py-3 text-textLight hover:bg-gray-800/50 transition-colors group"
+                  onClick={() => setShowAuthDropdown(false)}
+                >
+                  <svg className="w-5 h-5 text-secondary group-hover:text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  Sign In
+                </Link>
+                <Link
+                  href="/auth?view=sign_up"
+                  className="flex items-center gap-3 px-4 py-3 text-textLight hover:bg-gray-800/50 transition-colors group"
+                  onClick={() => setShowAuthDropdown(false)}
+                >
+                  <svg className="w-5 h-5 text-accent group-hover:text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Create Account
+                </Link>
+              </div>
+              <div className="border-t border-gray-700/50">
+                <div className="px-4 py-3 text-xs text-textLight/60">
+                  Join our gaming community
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     );
   };
