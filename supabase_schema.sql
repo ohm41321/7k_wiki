@@ -9,10 +9,11 @@ create table public.posts (
   category text null,
   tags text[] null,
   imageurls text[] null,
+  author_id uuid null,
   constraint posts_pkey primary key (id),
-  constraint posts_slug_key unique (slug)
+  constraint posts_slug_key unique (slug),
+  constraint posts_author_id_fkey foreign KEY (author_id) references auth.users (id)
 ) TABLESPACE pg_default;
-
 
 create table public.comments (
   id bigint generated always as identity not null,
