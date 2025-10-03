@@ -58,9 +58,25 @@ const Navbar = () => {
   }, [showAuthDropdown]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-    setUser(null);
+    try {
+      console.log('Calling server logout...');
+      // Call server-side logout
+      const response = await fetch('/api/auth/logout');
+      const data = await response.json();
+      console.log('Server logout response:', data);
+
+      if (data.success) {
+        // Redirect to the specified URL
+        window.location.href = data.redirect || '/';
+      } else {
+        console.error('Logout failed');
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback: redirect to home
+      window.location.href = '/';
+    }
   };
 
   const renderAuthButtons = () => {

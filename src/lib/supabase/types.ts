@@ -3,6 +3,26 @@ export type Json = string | number | boolean | null | { [key: string]: Json } | 
 export interface Database {
   public: {
     Tables: {
+      users: {
+        Row: {
+          id: string
+          email: string | null
+          name: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          name?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          name?: string | null
+          created_at?: string
+        }
+      }
       comments: {
         Row: {
           id: number
@@ -38,6 +58,7 @@ export interface Database {
           category: string | null
           tags: string[] | null
           imageUrls: string[] | null
+          author_id: string | null
         }
         Insert: {
           id?: number
@@ -50,6 +71,7 @@ export interface Database {
           category?: string | null
           tags?: string[] | null
           imageUrls?: string[] | null
+          author_id?: string | null
         }
         Update: {
           id?: number
@@ -62,6 +84,7 @@ export interface Database {
           category?: string | null
           tags?: string[] | null
           imageUrls?: string[] | null
+          author_id?: string | null
         }
       }
     }
