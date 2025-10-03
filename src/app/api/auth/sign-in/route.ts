@@ -44,9 +44,6 @@ export async function POST(req: NextRequest) {
   }
 
   // The `res` object now has the session cookie set by the Supabase client.
-  // We return a new response with a JSON body, but with the headers from `res`.
-  return new NextResponse(JSON.stringify({ message: 'Success!' }), {
-    status: 200,
-    headers: res.headers,
-  });
+  // We return a new JSON response, but with the headers from `res` to include the cookie.
+  return NextResponse.json({ message: 'Success!' }, { status: 200, headers: res.headers });
 }

@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Return a JSON response while preserving the headers from the original response
-  return new NextResponse(JSON.stringify({ message: 'Success! Please check your email to confirm.' }), {
-    status: 200,
-    headers: res.headers,
-  });
+  return NextResponse.json(
+    { message: 'Success! Please check your email to confirm.' },
+    { status: 200, headers: res.headers }
+  );
 }
