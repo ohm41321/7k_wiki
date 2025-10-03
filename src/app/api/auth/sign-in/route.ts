@@ -23,5 +23,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ message: 'Success!' });
+  // Read the session that should have been set via cookies by the server-side client
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) {
+    // still return success since sign in succeeded, but surface the session error for debugging
+    console.error('Error fetching session after sign-in:', sessionError);
+  }
+
+  return NextResponse.json({ message: 'Success!', session: sessionData?.session ?? null });
 }

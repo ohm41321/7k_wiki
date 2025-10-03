@@ -26,8 +26,41 @@ export default function LoginPage() {
       toast.error('Invalid credentials');
     } else {
       toast.success('Login successful!');
-      // Hard reload to ensure session is read correctly by all components
-      window.location.assign('/');
+        // Wait briefly to allow server-set cookies to be available to the browser.
+        // The sign-in route returns the session when available. Poll a couple times before redirect.
+        const body = await res.json();
+        const hasSession = !!body?.session;
+
+        if (hasSession) {
+          window.location.assign('/');
+        } else {
+          // Poll a few times for session to appear (this handles some hosting timing edge cases)
+          let attempts = 0;
+          const maxAttempts = 5;
+          const poll = async () => {
+            attempts += 1;
+            try {
+              const sRes = await fetch('/api/auth/session');
+              if (sRes.ok) {
+                const sBody = await sRes.json();
+                if (sBody?.session) {
+                  window.location.assign('/');
+                  return;
+                }
+              }
+            } catch (err) {
+              // ignore and retry
+            }
+
+            if (attempts < maxAttempts) {
+              setTimeout(poll, 400);
+            } else {
+              // Last resort, reload
+              window.location.assign('/');
+            }
+          };
+          setTimeout(poll, 400);
+        }
     }
   };
 

@@ -23,5 +23,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ message: 'Success! Please check your email to confirm.' });
+  // Read session in case it's available (for email confirmation flows this may be null)
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) {
+    console.error('Error fetching session after sign-up:', sessionError);
+  }
+
+  return NextResponse.json({ message: 'Success! Please check your email to confirm.', session: sessionData?.session ?? null });
 }
