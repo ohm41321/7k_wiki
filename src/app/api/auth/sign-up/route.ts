@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     email,
     password,
     options: {
-      user_metadata: {
+      data: {
         username: username,
       }
     }
