@@ -18,37 +18,16 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/utils';
 import type { User } from '@supabase/supabase-js';
 
 // This is a simplified version of the hook from Navbar.tsx
-function useCurrentUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const supabase = createSupabaseBrowserClient();
-
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getCurrentUser();
-  }, [supabase]);
-
-  return user;
-}
-
-// Define the new Post type based on Supabase query
-type PostAuthor = {
-  username: string;
-} | null;
-
 interface PostType {
   slug: string;
   title: string;
   created_at: string;
-  author: PostAuthor;
+  author_name: string | null; // Changed from author object to author_name string
   content: string | null;
   category: string | null;
   tags: string[] | null;
   imageUrls?: string[] | null;
   game: string | null;
-  author_id: string;
 }
 
 interface PostClientProps {
@@ -56,7 +35,6 @@ interface PostClientProps {
 }
 
 export default function PostClient({ post }: PostClientProps) {
-  const currentUser = useCurrentUser();
   const router = useRouter();
   const [lightbox, setLightbox] = useState<{ images: string[]; startIndex: number } | null>(null);
   const [imageGridView, setImageGridView] = useState(true);
@@ -71,7 +49,8 @@ export default function PostClient({ post }: PostClientProps) {
     return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   };
 
-  const canEdit = currentUser?.id === post.author_id;
+  // No edit button in anonymous mode
+  const canEdit = false;
 
   return (
     <div className="bg-primary min-h-screen text-textLight">
@@ -91,7 +70,7 @@ export default function PostClient({ post }: PostClientProps) {
               </div>
               <div className="md:w-1/3 md:text-right mt-2 md:mt-0 flex-shrink-0">
                 <p className="text-textLight/80" suppressHydrationWarning>
-                  By <span className="font-semibold text-secondary">{post.author?.username || 'Unknown'}</span>
+                  By <span className="font-semibold text-secondary">{post.author_name || 'Anonymous'}</span>
                 </p>
                 <p className="text-sm text-textLight/60" suppressHydrationWarning>
                   {formatDateThai(post.created_at)} at {formatTimeThai(post.created_at)}

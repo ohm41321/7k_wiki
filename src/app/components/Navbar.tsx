@@ -1,23 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/lib/use-auth';
-import { createSupabaseBrowserClient } from '@/lib/supabase/utils';
+import { useState, useEffect } from 'react';
 import Search from './Search';
 
 const Navbar = () => {
-  const { user, profile, loading } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  const supabase = createSupabaseBrowserClient();
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,24 +15,6 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    if (isUserMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isUserMenuOpen]);
 
   return (
     <nav 
@@ -68,38 +39,6 @@ const Navbar = () => {
             <Link href="/" className="text-textLight hover:text-yellow-300 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Home
             </Link>
-            
-            {loading ? (
-              <div className="text-textLight">Loading...</div>
-            ) : user ? (
-              <div className="relative" ref={userMenuRef}>
-                <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center space-x-2 text-yellow-300 hover:text-yellow-100 transition-colors">
-                  <span>{profile?.username || user.email}</span>
-                  <svg className={`h-5 w-5 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-700">
-                    <button 
-                      onClick={() => { handleSignOut(); setIsUserMenuOpen(false); }}
-                      className="block w-full text-left px-4 py-2 text-sm text-textLight hover:bg-gray-700 transition-colors"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <Link href="/login" className="text-textLight hover:text-secondary px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                  Login
-                </Link>
-                <Link href="/register" className="text-textLight hover:text-secondary px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                  Register
-                </Link>
-              </>
-            )}
           </div>
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
@@ -125,31 +64,6 @@ const Navbar = () => {
             <Link href="/" className="text-textLight hover:text-yellow-300 block px-3 py-2 rounded-md text-base font-medium transition-colors">
               Home
             </Link>
-            
-            {loading ? (
-              <div className="text-textLight px-3 py-2">Loading...</div>
-            ) : user ? (
-              <>
-                <div className="px-3 py-2">
-                  <span className="text-yellow-300">Welcome, {user.email}</span>
-                </div>
-                <button 
-                  onClick={handleSignOut} 
-                  className="text-textLight hover:text-yellow-300 block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-textLight hover:text-secondary block px-3 py-2 rounded-md text-base font-medium transition-colors">
-                  Login
-                </Link>
-                <Link href="/register" className="text-textLight hover:text-secondary block px-3 py-2 rounded-md text-base font-medium transition-colors">
-                  Register
-                </Link>
-              </>
-            )}
           </div>
         </div>
       )}

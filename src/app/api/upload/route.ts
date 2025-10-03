@@ -1,52 +1,56 @@
-
-import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/utils';
+import { NextResponse, type NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
 
-export async function POST(request: NextRequest) {
+export const runtime = 'nodejs'; // Necessary for Supabase admin client
+
+export async function POST(req: NextRequest) {
+  // Check for required environment variables for the admin client
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json({ error: 'Server configuration error: Missing Supabase environment variables for storage.' }, { status: 500 });
+  }
+
   try {
-    const formData = await request.formData();
+    const formData = await req.formData();
     const file = formData.get('file') as File | null;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
     }
 
-    // IMPORTANT: Use service_role key for server-side operations
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    // Create a Supabase admin client to upload files with service_role permissions
+    const supabaseAdmin = createSupabaseAdminClient();
 
-    const fileExtension = file.name.split('.').pop();
-    // Generate a unique file name with the original extension
-    const fileName = `${uuidv4()}.${fileExtension}`;
-    const filePath = `public/${fileName}`;
+    // Generate a unique file name
+    const fileExtension = path.extname(file.name);
+    const fileName = `${uuidv4()}${fileExtension}`;
 
-    const { data, error } = await supabase.storage
-      .from('images') // The bucket name you created
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
+    // Upload the file to the 'images' bucket
+    const { data, error: uploadError } = await supabaseAdmin.storage
+      .from('images')
+      .upload(fileName, file);
 
-    if (error) {
-      console.error('Supabase upload error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      throw new Error('Failed to upload file to Supabase.');
     }
 
     // Get the public URL of the uploaded file
-    const { data: publicUrlData } = supabase.storage
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from('images')
       .getPublicUrl(data.path);
 
-    if (!publicUrlData) {
-        return NextResponse.json({ error: 'Could not get public URL.' }, { status: 500 });
+    if (!publicUrl) {
+      throw new Error('Failed to get public URL for the uploaded file.');
     }
 
-    return NextResponse.json({ url: publicUrlData.publicUrl });
-  } catch (e) {
-    console.error('Upload API error:', e);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    // Return the public URL to the client
+    return NextResponse.json({ url: publicUrl });
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error('Upload API error:', errorMessage);
+    return NextResponse.json({ error: `Upload failed: ${errorMessage}` }, { status: 500 });
   }
 }

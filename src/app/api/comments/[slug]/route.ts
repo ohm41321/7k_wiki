@@ -2,7 +2,7 @@ import { createSupabaseServerComponentClient } from '@/lib/supabase/utils';
 import { cookies } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'nodejs'; // Force Node.js runtime for Supabase compatibility
+export const runtime = 'nodejs';
 
 // GET handler to fetch comments for a specific post slug.
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
@@ -27,13 +27,11 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
     const { data, error } = await supabase
       .from('comments')
-      .select('*, author:users(username)')
+      .select('*')
       .eq('post_id', post.id)
       .order('created_at', { ascending: true });
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     return NextResponse.json(data);
   } catch (e) {
@@ -53,14 +51,9 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   }
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { content } = await req.json();
-    if (!content) {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
+    const { content, author_name } = await req.json();
+    if (!content || !author_name) {
+      return NextResponse.json({ error: 'Content and author name are required' }, { status: 400 });
     }
 
     const { data: post, error: postError } = await supabase
@@ -73,17 +66,15 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
-    const { data, error } = await supabase
+    // Perform the insert but do not select the result back
+    const { error } = await supabase
       .from('comments')
-      .insert([{ post_id: post.id, user_id: user.id, content }])
-      .select('*, author:users(username)')
-      .single();
+      .insert([{ post_id: post.id, author_name: author_name, content }]);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
-    return NextResponse.json(data);
+    // Return a 204 No Content response to prevent SWR from using this response as cache data
+    return new NextResponse(null, { status: 204 });
 
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred';

@@ -9,7 +9,7 @@ export async function getPosts() {
 
   const { data, error } = await supabase
     .from("posts")
-    .select("*, author:users(username)");
+    .select("*");
 
   if (error) {
     console.error("Error fetching posts:", error);
@@ -26,7 +26,7 @@ export async function getPostBySlug(slug: string) {
 
   const { data, error } = await supabase
     .from("posts")
-    .select("*, author:users(username)")
+    .select("*")
     .eq("slug", slug)
     .single();
 

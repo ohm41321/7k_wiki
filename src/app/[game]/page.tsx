@@ -117,7 +117,7 @@ export default async function GamePage({ params }: { params: { game: string } })
                   </div>
 
                   <p className="font-normal text-textLight text-sm" suppressHydrationWarning>
-                    By {post.author?.username || 'Unknown'} on {formatDateThai(post.created_at)} เวลา {formatTimeThai(post.created_at)}
+                    By {post.author_name || 'Anonymous'} on {formatDateThai(post.created_at)} เวลา {formatTimeThai(post.created_at)}
                   </p>
                 </div>
               </div>

@@ -74,7 +74,7 @@ export default async function CategoryPage({ params }: PageProps) {
                   )}
                   <h3 className="mb-2 mt-1 text-xl font-bold tracking-tight text-secondary group-hover:text-accent transition-colors">{post.title}</h3>
                   <p className="font-normal text-textLight text-sm" suppressHydrationWarning>
-                    By {post.author?.username || 'Unknown'} on {formatDateThai(post.created_at)} เวลา {formatTimeThai(post.created_at)}
+                    By {post.author_name || 'Anonymous'} on {formatDateThai(post.created_at)} เวลา {formatTimeThai(post.created_at)}
                   </p>
                 </div>
               </Link>

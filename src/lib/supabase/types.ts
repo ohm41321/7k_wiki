@@ -8,22 +8,22 @@ export interface Database {
           id: number
           content: string
           post_id: number
-          user_id: string
           created_at: string
+          author_name: string | null
         }
         Insert: {
           id?: number
           content: string
           post_id: number
-          user_id: string
           created_at?: string
+          author_name?: string | null
         }
         Update: {
           id?: number
           content?: string
           post_id?: number
-          user_id?: string
           created_at?: string
+          author_name?: string | null
         }
       }
       posts: {
@@ -32,57 +32,41 @@ export interface Database {
           slug: string
           title: string
           content: string | null
-          author_id: string
           created_at: string
-          updated_at: string
+          author_name: string | null
           game: string | null
+          category: string | null
+          tags: string[] | null
+          imageUrls: string[] | null
         }
         Insert: {
           id?: number
           slug: string
           title: string
           content?: string | null
-          author_id: string
           created_at?: string
-          updated_at?: string
-          game: string | null
+          author_name?: string | null
+          game?: string | null
+          category?: string | null
+          tags?: string[] | null
+          imageUrls?: string[] | null
         }
         Update: {
           id?: number
           slug?: string
           title?: string
           content?: string | null
-          author_id?: string
           created_at?: string
-          updated_at?: string
-          game: string | null
-        }
-      }
-      users: {
-        Row: {
-          id: string
-          username: string
-          created_at: string
-        }
-        Insert: {
-          id: string
-          username: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          username?: string
-          created_at?: string
+          author_name?: string | null
+          game?: string | null
+          category?: string | null
+          tags?: string[] | null
+          imageUrls?: string[] | null
         }
       }
     }
     Views: { [_ in never]: never }
-    Functions: {
-      handle_updated_at: {
-        Args: Record<string, unknown>
-        Returns: unknown
-      }
-    }
+    Functions: { [_ in never]: never }
     Enums: { [_ in never]: never }
   }
 }
