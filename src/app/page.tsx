@@ -10,7 +10,7 @@ import AuthSuccessMessage from '@/app/components/AuthSuccessMessage';
 
 // Define a mapping for game-specific details
 const gameDetails: { [key: string]: { title: string; banner: any } } = {
-  '7k-re-fonzu': {
+  '7KRe': {
     title: 'Seven Knights Re:Birth',
     banner: genericBanner,
   },
