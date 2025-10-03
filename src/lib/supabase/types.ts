@@ -35,6 +35,7 @@ export interface Database {
           author_id: string
           created_at: string
           updated_at: string
+          game: string | null
         }
         Insert: {
           id?: number
@@ -44,6 +45,7 @@ export interface Database {
           author_id: string
           created_at?: string
           updated_at?: string
+          game: string | null
         }
         Update: {
           id?: number
@@ -53,6 +55,7 @@ export interface Database {
           author_id?: string
           created_at?: string
           updated_at?: string
+          game: string | null
         }
       }
       users: {

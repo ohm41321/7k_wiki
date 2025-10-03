@@ -10,23 +10,42 @@ import Search from './Search';
 // Custom hook to manage Supabase auth state
 function useSupabaseAuth() {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<{ username: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createSupabaseBrowserClient();
   const router = useRouter();
 
   useEffect(() => {
-    const getSession = async () => {
+    const getSessionAndProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
+
+      if (session?.user) {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('username')
+          .eq('id', session.user.id)
+          .single();
+        setProfile(userProfile);
+      }
       setLoading(false);
     };
 
-    getSession();
+    getSessionAndProfile();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('username')
+          .eq('id', session.user.id)
+          .single();
+        setProfile(userProfile);
+      } else {
+        setProfile(null); // Clear profile on logout
+      }
       setLoading(false);
-      // Refresh the page on sign-in or sign-out to update server-side rendered content
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
         router.refresh();
       }
@@ -39,14 +58,13 @@ function useSupabaseAuth() {
 
   const handleSignOut = async () => {
     await fetch('/api/auth/sign-out', { method: 'POST' });
-    // The onAuthStateChange listener will handle the rest
   };
 
-  return { user, loading, handleSignOut };
+  return { user, profile, loading, handleSignOut };
 }
 
 const Navbar = () => {
-  const { user, loading, handleSignOut } = useSupabaseAuth();
+  const { user, profile, loading, handleSignOut } = useSupabaseAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -107,8 +125,7 @@ const Navbar = () => {
             ) : user ? (
               <div className="relative" ref={userMenuRef}>
                 <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center space-x-2 text-yellow-300 hover:text-yellow-100 transition-colors">
-                  {/* We don't have the username here yet, we'll add it later */}
-                  <span>{user.email}</span>
+                  <span>{profile?.username || user.email}</span>
                   <svg className={`h-5 w-5 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>

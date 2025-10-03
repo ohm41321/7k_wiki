@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Modal } from '@/app/components/Modal';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
@@ -9,6 +8,10 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
+import remarkBreaks from 'remark-breaks';
+import { toast } from 'sonner';
+import { createSupabaseBrowserClient } from '@/lib/supabase/utils';
+import type { User } from '@supabase/supabase-js';
 
 const customSchema = {
   ...defaultSchema,
@@ -17,11 +20,27 @@ const customSchema = {
     src: [...(defaultSchema.protocols?.src || []), 'blob', 'data'],
   },
 };
-import remarkBreaks from 'remark-breaks';
-import { toast } from 'sonner';
+
+// Custom hook to get the current Supabase user
+function useSupabaseUser() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createSupabaseBrowserClient();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setLoading(false);
+    };
+    getUser();
+  }, [supabase]);
+
+  return { user, loading };
+}
 
 export default function CreatePostModal() {
-  const { data: session, status } = useSession();
+  const { user, loading: userLoading } = useSupabaseUser();
   const router = useRouter();
   const searchParams = useSearchParams();
   const game = searchParams.get('game');
@@ -45,16 +64,15 @@ export default function CreatePostModal() {
   }, [stagedFiles]);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    // Redirect if user is not logged in after loading has completed
+    if (!userLoading && !user) {
       router.push('/login');
     }
-  }, [status, router]);
+  }, [user, userLoading, router]);
 
   const stageImageForUpload = (file: File) => {
     const blobUrl = URL.createObjectURL(file);
-    const placeholder = `
-![Uploading ${file.name}...](${blobUrl})
-`;
+    const placeholder = `\n![Uploading ${file.name}...}](${blobUrl})\n`;
     setContent(prev => prev + placeholder);
     setStagedFiles(prev => new Map(prev).set(blobUrl, file));
   };
@@ -118,7 +136,7 @@ export default function CreatePostModal() {
       let finalContent = content;
       const imageUrls: string[] = [];
       const uploadPromises: Promise<{ blobUrl: string, finalUrl: string }>[] = [];
-      const markdownImageRegex = /!\[[^\\]*\]\((blob:[^)]+)\)/g;
+      const markdownImageRegex = /![\[[^\]]*\]\((blob:[^)]+)\)/g;
       let match;
 
       while ((match = markdownImageRegex.exec(content)) !== null) {
@@ -140,11 +158,11 @@ export default function CreatePostModal() {
         imageUrls.push(finalUrl);
       });
 
-      const author = session?.user?.name || 'Anonymous';
+      // Author is now handled by the server via session, no need to send it.
       const res = await fetch('/api/posts/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, author, content: finalContent, imageUrls, tags, game }),
+        body: JSON.stringify({ title, content: finalContent, imageUrls, tags, game }),
       });
 
       if (!res.ok) {
@@ -157,10 +175,9 @@ export default function CreatePostModal() {
       loading: 'Creating post...',
       success: (data) => {
         router.refresh();
-        // Add a small delay to ensure the refresh completes before navigating
         setTimeout(() => {
           router.back();
-        }, 500); // 0.5 second delay
+        }, 500);
         return `Post "${data.title}" has been created.`;
       },
       error: (err) => {
@@ -173,12 +190,13 @@ export default function CreatePostModal() {
     });
   };
   
-  if (status === 'loading') {
+  if (userLoading) {
     return <Modal><div className="text-center">Loading...</div></Modal>;
   }
 
-  if (status === 'unauthenticated') {
-    return null;
+  if (!user) {
+    // This will be handled by the useEffect redirect, but as a fallback:
+    return <Modal><div className="text-center">Redirecting to login...</div></Modal>;
   }
 
   return (
@@ -188,7 +206,8 @@ export default function CreatePostModal() {
           <div className="flex items-start space-x-4">
             <div className="flex-shrink-0">
               <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center">
-                <span className="text-xl font-bold text-textLight">{session?.user?.name?.charAt(0)}</span>
+                {/* Displaying first letter of email as a placeholder */}
+                <span className="text-xl font-bold text-textLight">{user.email?.charAt(0).toUpperCase()}</span>
               </div>
             </div>
             <div className="min-w-0 flex-1">
