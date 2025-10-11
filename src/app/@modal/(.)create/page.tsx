@@ -185,8 +185,8 @@ export default function CreatePostModal() {
     return (
       <Modal>
         <div className="flex">
-          <div className="flex-grow transition-all duration-300 ease-in-out">
-            <form onSubmit={handleSubmit} className="p-2 sm:p-4">
+          <div className="flex-grow transition-all duration-300 ease-in-out relative">
+            <form onSubmit={handleSubmit} className="p-3 sm:p-4">
               <input
                 type="text"
                 className="block w-full bg-transparent border-0 focus:ring-0 sm:text-lg font-bold text-white placeholder-gray-500 mb-2"
@@ -211,17 +211,17 @@ export default function CreatePostModal() {
             <div className="mt-4">
               {activeTab === 'write' ? (
                 <div>
-                  <div className="flex items-center space-x-1 sm:space-x-2 p-2 bg-gray-900 rounded-t-md border-b border-gray-700">
-                    <button type="button" title="Bold" onClick={() => wrapText('**', '**')} className="px-2 py-1 text-xs sm:text-sm font-bold text-white hover:bg-gray-700 rounded">B</button>
-                    <button type="button" title="Italic" onClick={() => wrapText('*', '*')} className="px-2 py-1 text-xs sm:text-sm italic text-white hover:bg-gray-700 rounded">I</button>
-                    <button type="button" title="Strikethrough" onClick={() => wrapText('~~', '~~')} className="px-2 py-1 text-xs sm:text-sm line-through text-white hover:bg-gray-700 rounded">S</button>
-                    <button type="button" title="Heading 1" onClick={() => wrapText('\n# ', '\n')} className="px-2 py-1 text-xs sm:text-sm font-bold text-white hover:bg-gray-700 rounded">H1</button>
-                    <button type="button" title="Heading 2" onClick={() => wrapText('\n## ', '\n')} className="px-2 py-1 text-xs sm:text-sm font-bold text-white hover:bg-gray-700 rounded">H2</button>
+                  <div className="flex items-center space-x-1 sm:space-x-2 p-2 bg-gray-900 rounded-t-md border-b border-gray-700 overflow-x-auto">
+                    <button type="button" title="Bold" onClick={() => wrapText('**', '**')} className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm font-bold text-white hover:bg-gray-700 rounded whitespace-nowrap flex-shrink-0">B</button>
+                    <button type="button" title="Italic" onClick={() => wrapText('*', '*')} className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm italic text-white hover:bg-gray-700 rounded whitespace-nowrap flex-shrink-0">I</button>
+                    <button type="button" title="Strikethrough" onClick={() => wrapText('~~', '~~')} className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm line-through text-white hover:bg-gray-700 rounded whitespace-nowrap flex-shrink-0">S</button>
+                    <button type="button" title="Heading 1" onClick={() => wrapText('\n# ', '\n')} className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm font-bold text-white hover:bg-gray-700 rounded whitespace-nowrap flex-shrink-0">H1</button>
+                    <button type="button" title="Heading 2" onClick={() => wrapText('\n## ', '\n')} className="px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm font-bold text-white hover:bg-gray-700 rounded whitespace-nowrap flex-shrink-0">H2</button>
                   </div>
                   <textarea
                     ref={textareaRef}
-                    rows={12}
-                    className="block w-full bg-transparent border border-gray-800 resize-none focus:ring-0 sm:text-lg text-white placeholder-gray-500 p-3 rounded-b-md"
+                    rows={8}
+                    className="block w-full bg-transparent border border-gray-800 resize-none focus:ring-0 text-sm sm:text-base lg:text-lg text-white placeholder-gray-500 p-3 rounded-b-md min-h-[200px] sm:min-h-[300px]"
                     placeholder="Write your post here..."
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
@@ -256,7 +256,7 @@ export default function CreatePostModal() {
               </div>
             </div>
             {showEmojiPicker && (
-              <div className="mt-2 absolute z-10">
+              <div className="mt-2 w-full max-w-full">
                 <EmojiPicker onEmojiClick={onEmojiClick} width="100%" theme={Theme.DARK} />
               </div>
             )}

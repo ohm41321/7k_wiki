@@ -49,9 +49,9 @@ $$ language plpgsql security definer;
 
 -- Trigger to call the function when a new user is created
 -- Temporarily disabled to test signup
--- create trigger on_auth_user_created
---   after insert on auth.users
---   for each row execute procedure public.handle_new_user();
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
 
 -- Enable RLS on users table
 alter table public.users enable row level security;

@@ -2,7 +2,7 @@
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
+import { faEnvelope, faHeart } from '@fortawesome/free-solid-svg-icons';
 
 export default function Footer() {
   return (
@@ -18,6 +18,10 @@ export default function Footer() {
           </a>
           <a href="https://github.com/ohm41321" target="_blank" rel="noopener noreferrer" className="text-yellow-300 hover:text-yellow-400">| &nbsp;
             <FontAwesomeIcon icon={faGithub} size="lg" /> ohm41321
+          </a>
+          <a href="https://tipme.in.th/athitfkm" target="_blank" rel="noopener noreferrer" className="text-yellow-300 hover:text-yellow-400 flex items-center gap-2"> | &nbsp;
+            <FontAwesomeIcon icon={faHeart} size="lg" />
+            Donate
           </a>
         </div>
         <div className="text-sm text-gray-400">© {new Date().getFullYear()} Fonzu Wiki. All rights reserved.</div>
