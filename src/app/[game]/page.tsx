@@ -41,7 +41,11 @@ export default function GamePage({ params }: { params: { game: string } }) {
         const postsResponse = await fetch('/api/posts');
         const allPosts = await postsResponse.json();
         const filteredPosts = allPosts.filter((post: any) => post.game === params.game);
-        setPosts(filteredPosts);
+        // Sort posts from newest to oldest
+        const sortedPosts = filteredPosts.sort((a: any, b: any) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setPosts(sortedPosts);
 
         // Get user session
         const { data: { session } } = await supabase.auth.getSession();
@@ -75,6 +79,13 @@ export default function GamePage({ params }: { params: { game: string } }) {
   const formatTimeThai = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+  };
+
+  const isNewPost = (createdAt: string) => {
+    const postDate = new Date(createdAt);
+    const now = new Date();
+    const diffInHours = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
+    return diffInHours < 24; // Less than 24 hours = 1 day
   };
 
   return (
@@ -151,9 +162,16 @@ export default function GamePage({ params }: { params: { game: string } }) {
                       <span className="text-accent font-bold text-sm hover:underline">{post.category}</span>
                     </Link>
                   )}
-                  <Link href={`/${params.game}/posts/${post.slug}`}>
-                    <h3 className="mb-2 mt-1 text-xl font-bold tracking-tight text-secondary group-hover:text-accent transition-colors">{post.title}</h3>
-                  </Link>
+                  <div className="flex items-center gap-2 mb-2 mt-1">
+                    <Link href={`/${params.game}/posts/${post.slug}`}>
+                      <h3 className="text-xl font-bold tracking-tight text-secondary group-hover:text-accent transition-colors">{post.title}</h3>
+                    </Link>
+                    {isNewPost(post.created_at) && (
+                      <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse shadow-lg">
+                        New!
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex flex-wrap gap-2 mb-3">
                     {post.tags?.map((tag: string) => (
