@@ -119,7 +119,7 @@ export default function GamePage({ params }: { params: { game: string } }) {
       {/* Main Content */}
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary">อัปเดตข่าวสาร ไกด์ และเคล็ดลับจากจารย์ปิง!</h2>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary">อัปเดตข่าวสาร ไกด์ และเคล็ดลับ</h2>
           {user && (
             <Link href={`/create?game=${params.game}`}>
               <span className="bg-accent hover:bg-accent-dark text-white font-bold py-2 px-4 rounded-md transition-colors text-sm sm:text-base whitespace-nowrap">
