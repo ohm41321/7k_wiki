@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const postData = await req.json();
-    const { title, content, tags, game, imageUrls } = postData;
+    const { title, content, tags, category, game, imageUrls } = postData;
 
     if (!title || !game) {
       return NextResponse.json({ message: 'Missing required fields: title, game' }, { status: 400 });
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
       title,
       content: content || '',
       tags: (tags || '').split(',').map((tag: string) => tag.trim()).filter(Boolean),
+      category: category || null,
       game,
       author_id: user.id, // Set author_id from the authenticated user
       author_name: user.user_metadata.full_name || user.email, // Use user metadata for name

@@ -2,11 +2,17 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Reveal from '@/app/components/Reveal';
 import FonzuHubBackground from '@/app/components/FonzuHubBackground';
+import GameCalendar from '@/app/components/GameCalendar';
 import { getPosts } from '@/app/lib/posts';
 import banner7k from '@/pic/7k_banner.webp';
 import genericBanner from '@/pic/noname_feature.jpg';
 import lostswordBanner from '@/pic/lostsword_thumnail.png';
 import wutheringWavesBanner from '@/pic/capsule_616x353.jpg';
+import blueArchiveBanner from '@/pic/ba.jpg';
+import honkaiStarRailBanner from '@/pic/honkai-star-rail-official-art.jpg';
+import genshinImpactBanner from '@/pic/genshin.jpeg';
+import punishingGrayRavenBanner from '@/pic/pgr.jpg';
+import zenlessZoneZeroBanner from '@/pic/zenless_featured.jpg';
 import AuthSuccessMessage from '@/app/components/AuthSuccessMessage';
 
 // Define a mapping for game-specific details
@@ -22,6 +28,26 @@ const gameDetails: { [key: string]: { title: string; banner: any } } = {
   'WutheringWaves': {
     title: 'Wuthering Waves',
     banner: wutheringWavesBanner,
+  },
+  'PunishingGrayRaven': {
+    title: 'Punishing: Gray Raven',
+    banner: punishingGrayRavenBanner,
+  },
+  'BlueArchive': {
+    title: 'Blue Archive',
+    banner: blueArchiveBanner,
+  },
+  'HonkaiStarRail': {
+    title: 'Honkai: Star Rail',
+    banner: honkaiStarRailBanner,
+  },
+  'GenshinImpact': {
+    title: 'Genshin Impact',
+    banner: genshinImpactBanner,
+  },
+  'ZenlessZoneZero': {
+    title: 'Zenless Zone Zero',
+    banner: zenlessZoneZeroBanner,
   },
   // Add other games here
 };
@@ -60,7 +86,7 @@ export default async function FonzuHub() {
           {games.map(gameSlug => {
             const details = gameDetails[gameSlug] || { title: gameSlug, banner: genericBanner };
             return (
-              <Reveal key={gameSlug} className="block transition-all duration-300 hover:!blur-none hover:!opacity-100 hover:scale-125">
+              <Reveal key={gameSlug} className="block transition-all duration-300 hover:!blur-none hover:!opacity-100 hover:scale-110">
                 <Link href={`/${gameSlug}`}>
                   <div className="group block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl w-full max-w-xs sm:max-w-sm">
                     <div className="relative w-full aspect-[16/9] overflow-hidden">
@@ -99,6 +125,18 @@ export default async function FonzuHub() {
               </div>
             </div>
           </Reveal>
+        </div>
+      </div>
+
+      {/* Calendar Section */}
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="text-center mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary mb-2">📅 ปฏิทินอัพเดทเกม</h2>
+          <p className="text-sm sm:text-base">ติดตามการอัพเดท ปิดปรับปรุง และอีเวนต์พิเศษของเกม</p>
+        </div>
+
+        <div className="max-w-4xl mx-auto">
+          <GameCalendar />
         </div>
       </div>
     </div>

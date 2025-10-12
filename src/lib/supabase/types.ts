@@ -87,6 +87,44 @@ export interface Database {
           author_id?: string | null
         }
       }
+      calendar_events: {
+        Row: {
+          id: number
+          title: string
+          description: string | null
+          event_date: string
+          event_time: string | null
+          game: string | null
+          event_type: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          title: string
+          description?: string | null
+          event_date: string
+          event_time?: string | null
+          game?: string | null
+          event_type: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          title?: string
+          description?: string | null
+          event_date?: string
+          event_time?: string | null
+          game?: string | null
+          event_type?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: { [_ in never]: never }
     Functions: { [_ in never]: never }

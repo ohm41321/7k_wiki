@@ -25,6 +25,7 @@ export default function CreatePostModal() {
   const game = searchParams.get('game');
   
     const [title, setTitle] = useState('');
+    const [category, setCategory] = useState('');
     const [tags, setTags] = useState('');
     const [content, setContent] = useState('');
     const [loading, setLoading] = useState(false);
@@ -152,6 +153,7 @@ export default function CreatePostModal() {
             content: finalContent,
             imageUrls,
             tags,
+            category,
             game
           }),
         });
@@ -195,13 +197,27 @@ export default function CreatePostModal() {
                 onChange={(e) => setTitle(e.target.value)}
                 required
               />
+              <select
+                className="block w-full bg-gray-800/50 border border-gray-700 focus:ring-2 focus:ring-secondary focus:border-transparent text-white placeholder-gray-500 mb-2 rounded-lg px-3 py-2"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="">เลือกประเภทโพสต์ (ไม่บังคับ)</option>
+                <option value="Tier List">Tier List</option>
+                <option value="Build Guide">Build Guide</option>
+                <option value="Guide">Guide</option>
+                <option value="News">News</option>
+                <option value="Tips">Tips</option>
+                <option value="Review">Review</option>
+                <option value="Other">Other</option>
+              </select>
               <input
                 type="text"
                 className="block w-full bg-transparent border-0 focus:ring-0 sm:text-sm text-white placeholder-gray-500 mb-4"
                 placeholder="Tags (comma-separated, e.g., Guide, PvP, Beginner)"
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
-              />            
+              />
             <div className="border-b border-gray-700">
               <nav className="-mb-px flex space-x-4" aria-label="Tabs">
                 <button type="button" onClick={() => setActiveTab('write')} className={`${activeTab === 'write' ? 'border-blue-500 text-white' : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'} whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm`}>Write</button>

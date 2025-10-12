@@ -7,7 +7,12 @@ import Reveal from '@/app/components/Reveal';
 import HeroBackground from '@/app/components/HeroBackground';
 import lostswordBanner from '@/pic/lostsword_thumnail.png';
 import wutheringWavesBanner from '@/pic/capsule_616x353.jpg';
+import blueArchiveBanner from '@/pic/ba.jpg';
 import genericBanner from '@/pic/noname_feature.jpg';
+import honkaiStarRailBanner from '@/pic/honkai-star-rail-official-art.jpg';
+import genshinImpactBanner from '@/pic/genshin.jpeg';
+import punishingGrayRavenBanner from '@/pic/pgr.jpg';
+import zenlessZoneZeroBanner from '@/pic/zenless_featured.jpg';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
@@ -25,14 +30,36 @@ const gameDetails: { [key: string]: { title: string; banner: any } } = {
     title: 'Wuthering Waves',
     banner: wutheringWavesBanner,
   },
+  'PunishingGrayRaven': {
+    title: 'Punishing: Gray Raven',
+    banner: punishingGrayRavenBanner,
+  },
+  'BlueArchive': {
+    title: 'Blue Archive',
+    banner: blueArchiveBanner,
+  },
+  'HonkaiStarRail': {
+    title: 'Honkai: Star Rail',
+    banner: honkaiStarRailBanner,
+  },
+  'GenshinImpact': {
+    title: 'Genshin Impact',
+    banner: genshinImpactBanner,
+  },
+  'ZenlessZoneZero': {
+    title: 'Zenless Zone Zero',
+    banner: zenlessZoneZeroBanner,
+  },
 };
 
 // No longer need PostData interface, type will be inferred from getPosts()
 
 export default function GamePage({ params }: { params: { game: string } }) {
-  const [posts, setPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+   const [posts, setPosts] = useState<any[]>([]);
+   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [user, setUser] = useState<User | null>(null);
+   const [activeTab, setActiveTab] = useState<string>('all');
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,6 +78,7 @@ export default function GamePage({ params }: { params: { game: string } }) {
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
         setPosts(sortedPosts);
+        setFilteredPosts(sortedPosts);
 
         // Get user session
         const { data: { session } } = await supabase.auth.getSession();
@@ -73,6 +101,33 @@ export default function GamePage({ params }: { params: { game: string } }) {
       authListener.subscription.unsubscribe();
     };
   }, [params.game, supabase.auth]);
+
+  // Filter posts based on active tab
+  useEffect(() => {
+    if (!posts.length) return;
+
+    let filtered = posts;
+
+    switch (activeTab) {
+      case 'tier-lists':
+        filtered = posts.filter(post =>
+          post.category?.toLowerCase() === 'tier list' ||
+          post.tags?.some((tag: string) => tag.toLowerCase().includes('tier'))
+        );
+        break;
+      case 'build-guides':
+        filtered = posts.filter(post =>
+          post.category?.toLowerCase() === 'build guide' ||
+          post.category?.toLowerCase() === 'guide' ||
+          post.tags?.some((tag: string) => tag.toLowerCase().includes('build') || tag.toLowerCase().includes('guide'))
+        );
+        break;
+      default:
+        filtered = posts;
+    }
+
+    setFilteredPosts(filtered);
+  }, [posts, activeTab]);
 
   const details = gameDetails[params.game] || { title: params.game, banner: genericBanner };
 
@@ -123,19 +178,53 @@ export default function GamePage({ params }: { params: { game: string } }) {
 
       {/* Main Content */}
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary">อัปเดตข่าวสาร ไกด์ และเคล็ดลับ</h2>
-          {user && (
-            <Link href={`/create?game=${params.game}`}>
-              <span className="bg-accent hover:bg-accent-dark text-white font-bold py-2 px-4 rounded-md transition-colors text-sm sm:text-base whitespace-nowrap">
-                Create Post
-              </span>
-            </Link>
-          )}
-        </div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
+           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary">อัปเดตข่าวสาร ไกด์ และเคล็ดลับ</h2>
+           {user && (
+             <Link href={`/create?game=${params.game}`}>
+               <span className="bg-accent hover:bg-accent-dark text-white font-bold py-2 px-4 rounded-md transition-colors text-sm sm:text-base whitespace-nowrap">
+                 Create Post
+               </span>
+             </Link>
+           )}
+         </div>
+
+         {/* Post Type Tabs */}
+         <div className="flex flex-wrap gap-2 mb-8 sm:mb-12">
+           <button
+             onClick={() => setActiveTab('all')}
+             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+               activeTab === 'all'
+                 ? 'bg-secondary text-primary shadow-lg'
+                 : 'bg-gray-800/50 text-textLight/70 hover:text-textLight hover:bg-gray-700/50'
+             }`}
+           >
+             ทั้งหมด ({posts.length})
+           </button>
+           <button
+             onClick={() => setActiveTab('tier-lists')}
+             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+               activeTab === 'tier-lists'
+                 ? 'bg-secondary text-primary shadow-lg'
+                 : 'bg-gray-800/50 text-textLight/70 hover:text-textLight hover:bg-gray-700/50'
+             }`}
+           >
+             Tier Lists ({posts.filter(post => post.category?.toLowerCase() === 'tier list' || post.tags?.some((tag: string) => tag.toLowerCase().includes('tier'))).length})
+           </button>
+           <button
+             onClick={() => setActiveTab('build-guides')}
+             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+               activeTab === 'build-guides'
+                 ? 'bg-secondary text-primary shadow-lg'
+                 : 'bg-gray-800/50 text-textLight/70 hover:text-textLight hover:bg-gray-700/50'
+             }`}
+           >
+             Build Guides ({posts.filter(post => post.category?.toLowerCase() === 'build guide' || post.category?.toLowerCase() === 'guide' || post.tags?.some((tag: string) => tag.toLowerCase().includes('build') || tag.toLowerCase().includes('guide'))).length})
+           </button>
+         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {posts.map((post) => (
+           {filteredPosts.map((post) => (
             <Reveal key={post.slug} className="block">
               <div className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl group">
                 <Link href={`/${params.game}/posts/${post.slug}`}>
