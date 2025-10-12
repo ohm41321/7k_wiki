@@ -52,6 +52,8 @@ export default function EditPostForm({ post, game }: EditPostFormProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [stagedFiles, setStagedFiles] = useState<Map<string, File>>(new Map());
+  const [existingImages, setExistingImages] = useState<string[]>(post.imageUrls || []);
+  const [imagesToDelete, setImagesToDelete] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     return () => {
@@ -116,6 +118,20 @@ export default function EditPostForm({ post, game }: EditPostFormProps) {
   const onEmojiClick = (emojiData: EmojiClickData) => {
     setContent(prev => prev + emojiData.emoji);
     setShowEmojiPicker(false);
+  };
+
+  const handleDeleteImage = (imageUrl: string) => {
+    setImagesToDelete(prev => new Set(prev).add(imageUrl));
+    setExistingImages(prev => prev.filter(url => url !== imageUrl));
+  };
+
+  const handleUndoDeleteImage = (imageUrl: string) => {
+    setImagesToDelete(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(imageUrl);
+      return newSet;
+    });
+    setExistingImages(prev => [...prev, imageUrl].sort());
   };
 
   const wrapText = (before: string, after: string) => {
@@ -187,10 +203,13 @@ export default function EditPostForm({ post, game }: EditPostFormProps) {
         finalContent = finalContent.replace(new RegExp(blobUrl, 'g'), finalUrl);
       });
 
+      // Calculate final image URLs (existing images minus deleted ones)
+      const finalImageUrls = existingImages.filter(url => !imagesToDelete.has(url));
+
       const res = await fetch(`/api/posts/${post.slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content: finalContent, tags }),
+        body: JSON.stringify({ title, content: finalContent, tags, imageUrls: finalImageUrls }),
       });
 
       if (!res.ok) {
@@ -298,6 +317,50 @@ export default function EditPostForm({ post, game }: EditPostFormProps) {
                       )}
                   </div>
               </div>
+
+              {/* Image Management Section */}
+              {existingImages.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium text-gray-400 mb-2">รูปภาพที่มีอยู่</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {existingImages.map((imageUrl, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={imageUrl}
+                          alt={`Existing image ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-md border border-gray-600"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-md flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteImage(imageUrl)}
+                            className="opacity-0 group-hover:opacity-100 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full transition-all duration-200"
+                            title="ลบรูปภาพ"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                        {imagesToDelete.has(imageUrl) && (
+                          <div className="absolute inset-0 bg-red-900 bg-opacity-75 rounded-md flex items-center justify-center">
+                            <div className="text-center">
+                              <p className="text-white text-xs mb-2">จะถูกลบ</p>
+                              <button
+                                type="button"
+                                onClick={() => handleUndoDeleteImage(imageUrl)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                              >
+                                ยกเลิก
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-700">
                   <div className="flex items-center space-x-1">

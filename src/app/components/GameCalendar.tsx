@@ -47,7 +47,12 @@ const eventTypeConfig = {
 const gameNames: { [key: string]: string } = {
   '7KRe': 'Seven Knights Re:Birth',
   'WutheringWaves': 'Wuthering Waves',
-  'LostSword': 'LostSword'
+  'LostSword': 'LostSword',
+  'BlueArchive': 'Blue Archive',
+  'HonkaiStarRail': 'Honkai: Star Rail',
+  'GenshinImpact': 'Genshin Impact',
+  'PunishingGrayRaven': 'Punishing: Gray Raven',
+  'ZenlessZoneZero': 'Zenless Zone Zero'
 };
 
 export default function GameCalendar() {

@@ -17,7 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
     }
 
     const postData = await req.json();
-    const { title, content, tags, game } = postData;
+    const { title, content, tags, game, imageUrls } = postData;
 
     if (!title || !content) {
       return NextResponse.json({ message: 'Missing required fields: title, content' }, { status: 400 });
@@ -44,6 +44,7 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
         content,
         tags: (tags || '').split(',').map((tag: string) => tag.trim()).filter(Boolean),
         game,
+        imageUrls: imageUrls || [],
       })
       .eq('slug', slug)
       .select()

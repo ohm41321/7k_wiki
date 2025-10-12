@@ -28,7 +28,11 @@ const games = [
   { value: '7KRe', label: 'Seven Knights Re:Birth' },
   { value: 'WutheringWaves', label: 'Wuthering Waves' },
   { value: 'LostSword', label: 'LostSword' },
-  { value: 'BlueArchive', label: 'Blue Archive' }
+  { value: 'BlueArchive', label: 'Blue Archive' },
+  { value: 'HonkaiStarRail', label: 'Honkai: Star Rail' },
+  { value: 'GenshinImpact', label: 'Genshin Impact' },
+  { value: 'PunishingGrayRaven', label: 'Punishing: Gray Raven' },
+  { value: 'ZenlessZoneZero', label: 'Zenless Zone Zero' }
 ];
 
 export default function AdminCalendarPage() {
