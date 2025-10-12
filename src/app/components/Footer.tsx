@@ -25,7 +25,13 @@ export default function Footer() {
             Donate
           </a>
         </div>
-        <div className="text-sm text-gray-400 mt-4 md:mt-0">© {new Date().getFullYear()} Fonzu Wiki. All rights reserved.</div>
+        <div className="text-sm text-gray-400 mt-4 md:mt-0">
+          © {new Date().getFullYear()} Fonzu Wiki. All rights reserved.
+          <span className="hidden sm:inline mx-2">|</span>
+          <a href="/privacy-policy" className="block sm:inline text-gray-400 hover:text-white transition-colors mt-2 sm:mt-0">นโยบายความเป็นส่วนตัว</a>
+          <span className="hidden sm:inline mx-2">|</span>
+          <a href="/cookie-policy" className="block sm:inline text-gray-400 hover:text-white transition-colors mt-2 sm:mt-0">นโยบายคุกกี้</a>
+        </div>
       </div>
     </footer>
   );
