@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import Reveal from '@/app/components/Reveal';
 import HeroBackground from '@/app/components/HeroBackground';
 import lostswordBanner from '@/pic/lostsword_thumnail.png';
+import wutheringWavesBanner from '@/pic/capsule_616x353.jpg';
 import genericBanner from '@/pic/noname_feature.jpg';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
@@ -19,6 +20,10 @@ const gameDetails: { [key: string]: { title: string; banner: any } } = {
   'LostSword': {
     title: 'LostSword',
     banner: lostswordBanner,
+  },
+  'WutheringWaves': {
+    title: 'Wuthering Waves',
+    banner: wutheringWavesBanner,
   },
 };
 

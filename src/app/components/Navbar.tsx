@@ -48,7 +48,11 @@ const Navbar = () => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showAuthDropdown && !(event.target as Element).closest('.auth-dropdown')) {
+      if (
+        showAuthDropdown &&
+        !(event.target as Element).closest('.auth-dropdown') &&
+        !(event.target as Element).closest('.auth-dropdown-button')
+      ) {
         setShowAuthDropdown(false);
       }
     };
@@ -95,8 +99,11 @@ const Navbar = () => {
     ) : (
       <div className="relative">
         <button
-          onClick={() => setShowAuthDropdown(!showAuthDropdown)}
-          className="flex items-center gap-2 text-textLight bg-gradient-to-r from-secondary to-accent hover:from-accent hover:to-secondary px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowAuthDropdown(!showAuthDropdown);
+          }}
+          className="auth-dropdown-button flex items-center gap-2 text-textLight bg-gradient-to-r from-secondary to-accent hover:from-accent hover:to-secondary px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg w-full md:w-auto justify-center md:justify-start"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -114,19 +121,15 @@ const Navbar = () => {
 
         {showAuthDropdown && (
           <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setShowAuthDropdown(false)}
-            ></div>
-
             {/* Dropdown */}
-            <div className="auth-dropdown absolute right-0 mt-2 w-48 bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-700/50 z-20">
+            <div className="auth-dropdown absolute right-0 top-full mt-1 w-full bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-700/50 z-[2147483647] md:right-0 md:w-48 md:left-auto md:mt-2 left-0 max-h-[80vh] overflow-y-auto">
               <div className="py-2">
                 <Link
                   href="/auth?view=sign_in"
-                  className="flex items-center gap-3 px-4 py-3 text-textLight hover:bg-gray-800/50 transition-colors group"
-                  onClick={() => setShowAuthDropdown(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-textLight hover:bg-gray-800/50 transition-colors group cursor-pointer"
+                  onClick={() => {
+                    setShowAuthDropdown(false);
+                  }}
                 >
                   <svg className="w-5 h-5 text-secondary group-hover:text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
@@ -135,8 +138,10 @@ const Navbar = () => {
                 </Link>
                 <Link
                   href="/auth?view=sign_up"
-                  className="flex items-center gap-3 px-4 py-3 text-textLight hover:bg-gray-800/50 transition-colors group"
-                  onClick={() => setShowAuthDropdown(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-textLight hover:bg-gray-800/50 transition-colors group cursor-pointer"
+                  onClick={() => {
+                    setShowAuthDropdown(false);
+                  }}
                 >
                   <svg className="w-5 h-5 text-accent group-hover:text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -157,8 +162,8 @@ const Navbar = () => {
   };
 
   return (
-    <nav 
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+    <nav
+      className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 ${
         isScrolled ? 'bg-gradient-to-r from-[#071023] to-[#081425] shadow-lg border-b border-yellow-900/20' : 'bg-black/40 backdrop-blur-sm'
       }`}
       style={{
@@ -183,8 +188,16 @@ const Navbar = () => {
           </div>
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
-             <button onClick={() => setIsOpen(!isOpen)} className="text-textLight hover:text-yellow-300 focus:outline-none">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <button
+               onClick={() => setIsOpen(!isOpen)}
+               className="text-textLight hover:text-yellow-300 focus:outline-none p-2 rounded-md hover:bg-white/10 transition-all duration-200 transform hover:scale-105"
+             >
+              <svg
+                className={`h-6 w-6 transition-transform duration-300 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 {isOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 ) : (
@@ -196,21 +209,21 @@ const Navbar = () => {
         </div>
       </div>
       {/* Mobile Menu */}
-      {isOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <div className="px-2 pb-2">
-              <Search />
-            </div>
-            <Link href="/" className="text-textLight hover:text-yellow-300 block px-3 py-2 rounded-md text-base font-medium transition-colors">
-              Home
-            </Link>
-            <div className="px-3 py-2">
-              {renderAuthButtons()}
-            </div>
+      <div className={`md:hidden overflow-visible transition-all duration-300 ease-in-out ${
+        isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+      }`}>
+        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gradient-to-b from-[#071023]/95 to-[#081425]/95 backdrop-blur-sm border-t border-yellow-900/20">
+          <div className="px-2 pb-2">
+            <Search />
+          </div>
+          <Link href="/" className="text-textLight hover:text-yellow-300 block px-3 py-2 rounded-md text-base font-medium transition-colors">
+            Home
+          </Link>
+          <div className="px-3 py-2">
+            {renderAuthButtons()}
           </div>
         </div>
-      )}
+      </div>
     </nav>
   );
 };

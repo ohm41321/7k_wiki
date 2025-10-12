@@ -221,21 +221,6 @@ function AuthPageComponent() {
               </span>
             </button>
 
-            {/* OAuth Setup Note */}
-            <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-3 text-center">
-              <div className="text-blue-400 text-sm font-medium mb-1">
-                🔧 Quick Setup Available
-              </div>
-              <p className="text-textLight/70 text-xs mb-2">
-                Google OAuth credentials are ready - just configure in Supabase
-              </p>
-              <Link
-                href="/oauth-setup"
-                className="text-accent hover:text-secondary text-xs underline transition-colors"
-              >
-                ⚡ Quick Setup Guide →
-              </Link>
-            </div>
           </div>
 
           {/* Footer */}

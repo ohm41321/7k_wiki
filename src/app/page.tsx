@@ -6,6 +6,7 @@ import { getPosts } from '@/app/lib/posts';
 import banner7k from '@/pic/7k_banner.webp';
 import genericBanner from '@/pic/noname_feature.jpg';
 import lostswordBanner from '@/pic/lostsword_thumnail.png';
+import wutheringWavesBanner from '@/pic/capsule_616x353.jpg';
 import AuthSuccessMessage from '@/app/components/AuthSuccessMessage';
 
 // Define a mapping for game-specific details
@@ -17,6 +18,10 @@ const gameDetails: { [key: string]: { title: string; banner: any } } = {
   'LostSword': {
     title: 'LostSword',
     banner: lostswordBanner,
+  },
+  'WutheringWaves': {
+    title: 'Wuthering Waves',
+    banner: wutheringWavesBanner,
   },
   // Add other games here
 };
@@ -51,13 +56,13 @@ export default async function FonzuHub() {
           <p className="text-sm sm:text-base">เลือกดูเนื้อหาของเกมที่คุณสนใจ</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8 justify-items-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-items-center hover:[&>div]:blur-sm hover:[&>div]:opacity-50">
           {games.map(gameSlug => {
             const details = gameDetails[gameSlug] || { title: gameSlug, banner: genericBanner };
             return (
-              <Reveal key={gameSlug} className="block">
+              <Reveal key={gameSlug} className="block transition-all duration-300 hover:!blur-none hover:!opacity-100 hover:scale-125">
                 <Link href={`/${gameSlug}`}>
-                  <div className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl group w-full max-w-xs sm:max-w-sm">
+                  <div className="group block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl w-full max-w-xs sm:max-w-sm">
                     <div className="relative w-full aspect-[16/9] overflow-hidden">
                       <Image
                         src={details.banner}
@@ -81,7 +86,7 @@ export default async function FonzuHub() {
           })}
 
           {/* Coming Soon Card */}
-          <Reveal className="block">
+          <Reveal className="block transition-all duration-300 hover:!blur-none hover:!opacity-100 hover:scale-105">
             <div className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 w-full max-w-xs sm:max-w-sm h-full">
               <div className="relative w-full aspect-[16/9] overflow-hidden bg-black/20 flex items-center justify-center">
                 <p className="text-gray-500 text-base sm:text-lg">Coming Soon...</p>
