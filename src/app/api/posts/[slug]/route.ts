@@ -10,6 +10,13 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
   const supabase = createSupabaseServerComponentClient(cookieStore);
   const { slug } = params;
 
+  console.log('PUT request received for slug:', slug);
+  console.log('Full params:', params);
+
+  // Validate and clean slug
+  const cleanSlug = slug?.split(':')[0]; // Remove anything after colon
+  console.log('Clean slug:', cleanSlug);
+
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -19,6 +26,8 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
     const postData = await req.json();
     const { title, content, tags, game, imageUrls } = postData;
 
+    console.log('Received post data:', { title: title?.substring(0, 50), contentLength: content?.length, tags, game, imageUrlsCount: imageUrls?.length });
+
     if (!title || !content) {
       return NextResponse.json({ message: 'Missing required fields: title, content' }, { status: 400 });
     }
@@ -26,7 +35,7 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
     const { data: originalPost, error: fetchError } = await supabase
       .from('posts')
       .select('author_id')
-      .eq('slug', slug)
+      .eq('slug', cleanSlug)
       .single();
 
     if (fetchError || !originalPost) {
@@ -46,7 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
         game,
         imageUrls: imageUrls || [],
       })
-      .eq('slug', slug)
+      .eq('slug', cleanSlug)
       .select()
       .single();
 
@@ -68,6 +77,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { slug: str
   const supabase = createSupabaseServerComponentClient(cookieStore);
   const { slug } = params;
 
+  // Validate and clean slug
+  const cleanSlug = slug?.split(':')[0]; // Remove anything after colon
+
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -77,7 +89,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { slug: str
     const { data: post, error: fetchError } = await supabase
       .from('posts')
       .select('author_id')
-      .eq('slug', slug)
+      .eq('slug', cleanSlug)
       .single();
 
     if (fetchError || !post) {
@@ -91,7 +103,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { slug: str
     const { error: deleteError } = await supabase
       .from('posts')
       .delete()
-      .eq('slug', slug);
+      .eq('slug', cleanSlug);
 
     if (deleteError) {
       throw deleteError;

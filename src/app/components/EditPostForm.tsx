@@ -206,6 +206,10 @@ export default function EditPostForm({ post, game }: EditPostFormProps) {
       // Calculate final image URLs (existing images minus deleted ones)
       const finalImageUrls = existingImages.filter(url => !imagesToDelete.has(url));
 
+      console.log('Sending PUT request to:', `/api/posts/${post.slug}`);
+      console.log('Post slug:', post.slug);
+      console.log('Final image URLs:', finalImageUrls);
+
       const res = await fetch(`/api/posts/${post.slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
