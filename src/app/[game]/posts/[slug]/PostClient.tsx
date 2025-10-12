@@ -26,7 +26,7 @@ interface PostType {
   content: string | null;
   category: string | null;
   tags: string[] | null;
-  imageUrls?: string[] | null;
+  imageurls?: string[] | null;
   game: string | null;
 }
 
@@ -133,7 +133,7 @@ export default function PostClient({ post }: PostClientProps) {
           <hr className="border-gray-700 my-8" />
 
           {/* Image Section */}
-          {post.imageUrls && post.imageUrls.length > 0 && (
+          {post.imageurls && post.imageurls.length > 0 && (
             <div className="mb-8">
               <div className="flex justify-end mb-4">
                 <button 
@@ -145,11 +145,11 @@ export default function PostClient({ post }: PostClientProps) {
               </div>
               {imageGridView ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {post.imageUrls.map((url, index) => (
-                    <div 
-                      key={index} 
-                      className="cursor-pointer relative aspect-video rounded-lg shadow-md overflow-hidden" 
-                      onClick={() => setLightbox({ images: post.imageUrls as string[], startIndex: index }) }
+                  {post.imageurls.map((url, index) => (
+                    <div
+                      key={index}
+                      className="cursor-pointer relative aspect-video rounded-lg shadow-md overflow-hidden"
+                      onClick={() => setLightbox({ images: post.imageurls as string[], startIndex: index }) }
                     >
                       <Image
                         src={url}
@@ -163,11 +163,11 @@ export default function PostClient({ post }: PostClientProps) {
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
-                  {post.imageUrls.map((url, index) => (
-                    <div 
-                      key={index} 
-                      className="cursor-pointer" 
-                      onClick={() => setLightbox({ images: post.imageUrls as string[], startIndex: index }) }
+                  {post.imageurls.map((url, index) => (
+                    <div
+                      key={index}
+                      className="cursor-pointer"
+                      onClick={() => setLightbox({ images: post.imageurls as string[], startIndex: index }) }
                     >
                       <Image
                         src={url}

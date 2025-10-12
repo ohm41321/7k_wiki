@@ -47,10 +47,10 @@ export default async function CategoryPage({ params }: PageProps) {
                 className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl group"
               >
                 <div className="relative w-full aspect-[16/9] overflow-hidden">
-                  {post.imageUrls && post.imageUrls.length > 0 ? (
-                    <Image 
-                      src={post.imageUrls[0]} 
-                      alt={post.title} 
+                  {post.imageurls && post.imageurls.length > 0 ? (
+                    <Image
+                      src={post.imageurls[0]}
+                      alt={post.title}
                       fill
                       style={{ objectFit: 'cover' }} 
                       className="transition-transform duration-500 group-hover:scale-110"

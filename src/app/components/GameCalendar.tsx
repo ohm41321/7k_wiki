@@ -55,6 +55,41 @@ const gameNames: { [key: string]: string } = {
   'ZenlessZoneZero': 'Zenless Zone Zero'
 };
 
+// Game abbreviation mapping and colors for display
+const gameAbbreviations: { [key: string]: string } = {
+  '7KRe': '7KR',
+  'LostSword': 'LS',
+  'WutheringWaves': 'WW',
+  'PunishingGrayRaven': 'PGR',
+  'BlueArchive': 'BA',
+  'HonkaiStarRail': 'HSR',
+  'GenshinImpact': 'GI',
+  'ZenlessZoneZero': 'ZZZ'
+};
+
+const gameColors: { [key: string]: string } = {
+  '7KRe': 'from-orange-500 to-red-600',
+  'LostSword': 'from-gray-600 to-gray-800',
+  'WutheringWaves': 'from-blue-400 to-cyan-500',
+  'PunishingGrayRaven': 'from-purple-500 to-pink-600',
+  'BlueArchive': 'from-blue-500 to-indigo-600',
+  'HonkaiStarRail': 'from-purple-400 to-purple-600',
+  'GenshinImpact': 'from-green-400 to-blue-500',
+  'ZenlessZoneZero': 'from-gray-400 to-gray-600'
+};
+
+// Alternative: Use a single placeholder image that exists
+// const gameBanners: { [key: string]: string } = {
+//   '7KRe': '/vercel.svg', // Using existing Next.js placeholder
+//   'LostSword': '/vercel.svg',
+//   'WutheringWaves': '/vercel.svg',
+//   'PunishingGrayRaven': '/vercel.svg',
+//   'BlueArchive': '/vercel.svg',
+//   'HonkaiStarRail': '/vercel.svg',
+//   'GenshinImpact': '/vercel.svg',
+//   'ZenlessZoneZero': '/vercel.svg'
+// };
+
 export default function GameCalendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,47 +201,64 @@ export default function GameCalendar() {
       ) : events.length === 0 ? (
         <div className="text-center py-8 text-textLight/60">
           <div className="text-4xl mb-2">📭</div>
-          <p>ไม่มีอีเวนต์ในเดือนนี้</p>
+          <p className="text-base">ไม่มีอีเวนต์ในเดือนนี้</p>
         </div>
       ) : (
         <div className="space-y-3">
           {events.map((event, index) => {
             const eventConfig = eventTypeConfig[event.event_type as keyof typeof eventTypeConfig] || eventTypeConfig.other;
 
+
             return (
               <Reveal key={event.id}>
                 <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/30 hover:border-gray-600/50 transition-all duration-200">
                   <div className="flex items-start gap-3">
+                    {/* Game Abbreviation Badge - Show on all devices */}
+                    {event.game && (
+                      <div className="flex-shrink-0">
+                        <div className="relative group">
+                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gameColors[event.game] || 'from-accent to-secondary'} flex items-center justify-center text-white text-sm font-bold border-2 border-gray-600/50 shadow-lg transition-all duration-200 group-hover:scale-105 group-hover:shadow-xl`}>
+                            {gameAbbreviations[event.game] || event.game.charAt(0).toUpperCase()}
+                          </div>
+                          {/* Tooltip - Show on hover */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            {gameNames[event.game] || event.game}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Event Type Icon */}
                     <div className={`${eventConfig.color} w-10 h-10 rounded-full flex items-center justify-center text-white text-lg flex-shrink-0`}>
                       {eventConfig.icon}
                     </div>
 
                     <div className="flex-grow">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-textLight">{event.title}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${eventConfig.color} text-white`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-textLight text-sm sm:text-base">{event.title}</h4>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${eventConfig.color} text-white w-fit`}>
                           {eventConfig.label}
                         </span>
                       </div>
 
                       {event.description && (
-                        <p className="text-textLight/80 text-sm mb-2">{event.description}</p>
+                        <p className="text-textLight/80 text-xs sm:text-sm mb-2">{event.description}</p>
                       )}
 
-                      <div className="flex items-center gap-4 text-sm text-textLight/60">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-xs sm:text-sm text-textLight/60">
                         <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          {formatEventDate(event.event_date, event.event_time)}
+                          <span className="text-xs sm:text-sm">{formatEventDate(event.event_date, event.event_time)}</span>
                         </span>
 
                         {event.game && (
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <span className="flex items-center gap-1 bg-gray-700/50 px-2 py-1 rounded-full w-fit">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            {gameNames[event.game] || event.game}
+                            <span className="text-xs font-medium text-accent truncate max-w-[100px] sm:max-w-none">{gameNames[event.game] || event.game}</span>
                           </span>
                         )}
                       </div>

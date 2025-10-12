@@ -132,7 +132,7 @@ export default async function FonzuHub() {
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="text-center mb-8 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary mb-2">📅 ปฏิทินอัพเดทเกม</h2>
-          <p className="text-sm sm:text-base">ติดตามการอัพเดท ปิดปรับปรุง และอีเวนต์พิเศษของเกม</p>
+          <p className="text-sm sm:text-base">ติดตามการอัพเดท ปิดปรับปรุง และอีเวนต์พิเศษของเกม /admin/calendar</p>
         </div>
 
         <div className="max-w-4xl mx-auto">

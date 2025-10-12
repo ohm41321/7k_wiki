@@ -60,6 +60,8 @@ export default function GamePage({ params }: { params: { game: string } }) {
    const [loading, setLoading] = useState(true);
    const [user, setUser] = useState<User | null>(null);
    const [activeTab, setActiveTab] = useState<string>('all');
+   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+   const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -102,32 +104,77 @@ export default function GamePage({ params }: { params: { game: string } }) {
     };
   }, [params.game, supabase.auth]);
 
-  // Filter posts based on active tab
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showCategoryFilter && !(event.target as Element).closest('.category-filter-container')) {
+        setShowCategoryFilter(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCategoryFilter]);
+
+  // Filter posts based on selected category
   useEffect(() => {
     if (!posts.length) return;
 
     let filtered = posts;
 
-    switch (activeTab) {
-      case 'tier-lists':
-        filtered = posts.filter(post =>
-          post.category?.toLowerCase() === 'tier list' ||
-          post.tags?.some((tag: string) => tag.toLowerCase().includes('tier'))
-        );
-        break;
-      case 'build-guides':
-        filtered = posts.filter(post =>
-          post.category?.toLowerCase() === 'build guide' ||
-          post.category?.toLowerCase() === 'guide' ||
-          post.tags?.some((tag: string) => tag.toLowerCase().includes('build') || tag.toLowerCase().includes('guide'))
-        );
-        break;
-      default:
-        filtered = posts;
+    if (selectedCategory !== 'all') {
+      switch (selectedCategory) {
+        case 'tier-list':
+          filtered = posts.filter(post =>
+            post.category?.toLowerCase() === 'tier list' ||
+            post.tags?.some((tag: string) => tag.toLowerCase().includes('tier'))
+          );
+          break;
+        case 'build-guide':
+          filtered = posts.filter(post =>
+            post.category?.toLowerCase() === 'build guide' ||
+            post.tags?.some((tag: string) => tag.toLowerCase().includes('build'))
+          );
+          break;
+        case 'guide':
+          filtered = posts.filter(post =>
+            post.category?.toLowerCase() === 'guide' ||
+            post.tags?.some((tag: string) => tag.toLowerCase().includes('guide'))
+          );
+          break;
+        case 'news':
+          filtered = posts.filter(post =>
+            post.category?.toLowerCase() === 'news' ||
+            post.tags?.some((tag: string) => tag.toLowerCase().includes('news'))
+          );
+          break;
+        case 'tips':
+          filtered = posts.filter(post =>
+            post.category?.toLowerCase() === 'tips' ||
+            post.tags?.some((tag: string) => tag.toLowerCase().includes('tip'))
+          );
+          break;
+        case 'review':
+          filtered = posts.filter(post =>
+            post.category?.toLowerCase() === 'review' ||
+            post.tags?.some((tag: string) => tag.toLowerCase().includes('review'))
+          );
+          break;
+        case 'other':
+          filtered = posts.filter(post =>
+            post.category?.toLowerCase() === 'other' ||
+            (post.category && !['tier list', 'build guide', 'guide', 'news', 'tips', 'review'].includes(post.category.toLowerCase()))
+          );
+          break;
+        default:
+          filtered = posts;
+      }
     }
 
     setFilteredPosts(filtered);
-  }, [posts, activeTab]);
+  }, [posts, selectedCategory]);
 
   const details = gameDetails[params.game] || { title: params.game, banner: genericBanner };
 
@@ -189,42 +236,123 @@ export default function GamePage({ params }: { params: { game: string } }) {
            )}
          </div>
 
-         {/* Post Type Tabs */}
-         <div className="flex flex-wrap gap-2 mb-8 sm:mb-12">
-           <button
-             onClick={() => setActiveTab('all')}
-             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-               activeTab === 'all'
-                 ? 'bg-secondary text-primary shadow-lg'
-                 : 'bg-gray-800/50 text-textLight/70 hover:text-textLight hover:bg-gray-700/50'
-             }`}
-           >
-             ทั้งหมด ({posts.length})
-           </button>
-           <button
-             onClick={() => setActiveTab('tier-lists')}
-             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-               activeTab === 'tier-lists'
-                 ? 'bg-secondary text-primary shadow-lg'
-                 : 'bg-gray-800/50 text-textLight/70 hover:text-textLight hover:bg-gray-700/50'
-             }`}
-           >
-             Tier Lists ({posts.filter(post => post.category?.toLowerCase() === 'tier list' || post.tags?.some((tag: string) => tag.toLowerCase().includes('tier'))).length})
-           </button>
-           <button
-             onClick={() => setActiveTab('build-guides')}
-             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-               activeTab === 'build-guides'
-                 ? 'bg-secondary text-primary shadow-lg'
-                 : 'bg-gray-800/50 text-textLight/70 hover:text-textLight hover:bg-gray-700/50'
-             }`}
-           >
-             Build Guides ({posts.filter(post => post.category?.toLowerCase() === 'build guide' || post.category?.toLowerCase() === 'guide' || post.tags?.some((tag: string) => tag.toLowerCase().includes('build') || tag.toLowerCase().includes('guide'))).length})
-           </button>
+         {/* Category Filter */}
+         <div className="mb-8 sm:mb-12">
+           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+             <h3 className="text-lg font-semibold text-secondary">กรองตามประเภทโพสต์</h3>
+             <div className="relative category-filter-container">
+               <button
+                 onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+                 className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 border border-gray-600"
+               >
+                 <span>
+                   {selectedCategory === 'all' ? 'ทั้งหมด' :
+                    selectedCategory === 'tier-list' ? 'Tier List' :
+                    selectedCategory === 'build-guide' ? 'Build Guide' :
+                    selectedCategory === 'guide' ? 'Guide' :
+                    selectedCategory === 'news' ? 'News' :
+                    selectedCategory === 'tips' ? 'Tips' :
+                    selectedCategory === 'review' ? 'Review' : 'Other'}
+                 </span>
+                 <svg className={`w-4 h-4 transition-transform ${showCategoryFilter ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                 </svg>
+               </button>
+
+               {showCategoryFilter && (
+                 <div className="absolute top-full left-0 mt-2 w-56 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50">
+                   <div className="py-2">
+                     <button
+                       onClick={() => { setSelectedCategory('all'); setShowCategoryFilter(false); }}
+                       className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors ${
+                         selectedCategory === 'all' ? 'bg-secondary text-primary' : 'text-textLight'
+                       }`}
+                     >
+                       ทั้งหมด ({posts.length})
+                     </button>
+                     <button
+                       onClick={() => { setSelectedCategory('tier-list'); setShowCategoryFilter(false); }}
+                       className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors ${
+                         selectedCategory === 'tier-list' ? 'bg-secondary text-primary' : 'text-textLight'
+                       }`}
+                     >
+                       Tier List ({posts.filter(post => post.category?.toLowerCase() === 'tier list' || post.tags?.some((tag: string) => tag.toLowerCase().includes('tier'))).length})
+                     </button>
+                     <button
+                       onClick={() => { setSelectedCategory('build-guide'); setShowCategoryFilter(false); }}
+                       className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors ${
+                         selectedCategory === 'build-guide' ? 'bg-secondary text-primary' : 'text-textLight'
+                       }`}
+                     >
+                       Build Guide ({posts.filter(post => post.category?.toLowerCase() === 'build guide' || post.tags?.some((tag: string) => tag.toLowerCase().includes('build'))).length})
+                     </button>
+                     <button
+                       onClick={() => { setSelectedCategory('guide'); setShowCategoryFilter(false); }}
+                       className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors ${
+                         selectedCategory === 'guide' ? 'bg-secondary text-primary' : 'text-textLight'
+                       }`}
+                     >
+                       Guide ({posts.filter(post => post.category?.toLowerCase() === 'guide' || post.tags?.some((tag: string) => tag.toLowerCase().includes('guide'))).length})
+                     </button>
+                     <button
+                       onClick={() => { setSelectedCategory('news'); setShowCategoryFilter(false); }}
+                       className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors ${
+                         selectedCategory === 'news' ? 'bg-secondary text-primary' : 'text-textLight'
+                       }`}
+                     >
+                       News ({posts.filter(post => post.category?.toLowerCase() === 'news' || post.tags?.some((tag: string) => tag.toLowerCase().includes('news'))).length})
+                     </button>
+                     <button
+                       onClick={() => { setSelectedCategory('tips'); setShowCategoryFilter(false); }}
+                       className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors ${
+                         selectedCategory === 'tips' ? 'bg-secondary text-primary' : 'text-textLight'
+                       }`}
+                     >
+                       Tips ({posts.filter(post => post.category?.toLowerCase() === 'tips' || post.tags?.some((tag: string) => tag.toLowerCase().includes('tip'))).length})
+                     </button>
+                     <button
+                       onClick={() => { setSelectedCategory('review'); setShowCategoryFilter(false); }}
+                       className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors ${
+                         selectedCategory === 'review' ? 'bg-secondary text-primary' : 'text-textLight'
+                       }`}
+                     >
+                       Review ({posts.filter(post => post.category?.toLowerCase() === 'review' || post.tags?.some((tag: string) => tag.toLowerCase().includes('review'))).length})
+                     </button>
+                     <button
+                       onClick={() => { setSelectedCategory('other'); setShowCategoryFilter(false); }}
+                       className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors ${
+                         selectedCategory === 'other' ? 'bg-secondary text-primary' : 'text-textLight'
+                       }`}
+                     >
+                       Other ({posts.filter(post => post.category?.toLowerCase() === 'other' || (post.category && !['tier list', 'build guide', 'guide', 'news', 'tips', 'review'].includes(post.category.toLowerCase()))).length})
+                     </button>
+                   </div>
+                 </div>
+               )}
+             </div>
+           </div>
+
+           {/* Filter Summary */}
+           <div className="text-sm text-textLight/70">
+             แสดง {filteredPosts.length} จาก {posts.length} โพสต์
+             {selectedCategory !== 'all' && (
+               <span className="ml-2 text-accent">
+                 (กรองโดย: {
+                   selectedCategory === 'tier-list' ? 'Tier List' :
+                   selectedCategory === 'build-guide' ? 'Build Guide' :
+                   selectedCategory === 'guide' ? 'Guide' :
+                   selectedCategory === 'news' ? 'News' :
+                   selectedCategory === 'tips' ? 'Tips' :
+                   selectedCategory === 'review' ? 'Review' : 'Other'
+                 })
+               </span>
+             )}
+           </div>
          </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-           {filteredPosts.map((post) => (
+            {filteredPosts.length > 0 ? (
+              filteredPosts.map((post) => (
             <Reveal key={post.slug} className="block">
               <div className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl group">
                 <Link href={`/${params.game}/posts/${post.slug}`}>
@@ -281,8 +409,14 @@ export default function GamePage({ params }: { params: { game: string } }) {
                 </div>
               </div>
             </Reveal>
-          ))}
-        </div>
+            ))
+           ) : (
+             <div className="col-span-full text-center py-12">
+               <div className="text-gray-400 text-lg mb-2">ไม่พบโพสต์ในหมวดหมู่นี้</div>
+               <p className="text-gray-500 text-sm">ลองเลือกประเภทโพสต์อื่นหรือสร้างโพสต์ใหม่</p>
+             </div>
+           )}
+         </div>
       </div>
       
     </div>

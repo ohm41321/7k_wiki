@@ -6,27 +6,32 @@ export const runtime = 'nodejs';
 
 // PUT - Update a post
 export async function PUT(req: NextRequest, { params }: { params: { slug: string } }) {
-  const cookieStore = cookies();
-  const supabase = createSupabaseServerComponentClient(cookieStore);
-  const { slug } = params;
-
-  console.log('PUT request received for slug:', slug);
-  console.log('Full params:', params);
-
-  // Validate and clean slug
-  const cleanSlug = slug?.split(':')[0]; // Remove anything after colon
-  console.log('Clean slug:', cleanSlug);
-
   try {
+    const cookieStore = cookies();
+
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Missing Supabase environment variables');
+      return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
+    }
+
+    const supabase = createSupabaseServerComponentClient(cookieStore);
+    const { slug } = params;
+
+    console.log('PUT request received for slug:', slug);
+    console.log('Full params:', params);
+
+    // Validate and clean slug
+    const cleanSlug = slug?.split(':')[0]; // Remove anything after colon
+    console.log('Clean slug:', cleanSlug);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const postData = await req.json();
-    const { title, content, tags, game, imageUrls } = postData;
+    const { title, content, tags, game, imageurls } = postData;
 
-    console.log('Received post data:', { title: title?.substring(0, 50), contentLength: content?.length, tags, game, imageUrlsCount: imageUrls?.length });
+    console.log('Received post data:', { title: title?.substring(0, 50), contentLength: content?.length, tags, game, imageurlsCount: imageurls?.length });
 
     if (!title || !content) {
       return NextResponse.json({ message: 'Missing required fields: title, content' }, { status: 400 });
@@ -46,26 +51,57 @@ export async function PUT(req: NextRequest, { params }: { params: { slug: string
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 
+    console.log('Attempting to update post with slug:', cleanSlug);
+    console.log('Update data:', {
+      title,
+      contentLength: content?.length,
+      tags: (tags || '').split(',').map((tag: string) => tag.trim()).filter(Boolean),
+      game,
+      imageurls: imageurls || []
+    });
+
+    console.log('Database update payload:', {
+      title: title?.substring(0, 30) + '...',
+      contentLength: content?.length,
+      tagsArray: (tags || '').split(',').map((tag: string) => tag.trim()).filter(Boolean),
+      game,
+      imageurlsType: Array.isArray(imageurls) ? 'array' : typeof imageurls,
+      imageurlsLength: Array.isArray(imageurls) ? imageurls.length : 'not array'
+    });
+
+    // First, let's try without imageUrls to see if that's causing the issue
+    const updateData: any = {
+      title,
+      content,
+      tags: (tags || '').split(',').map((tag: string) => tag.trim()).filter(Boolean),
+      game,
+    };
+
+    // Only add imageurls if it's a valid array (note: database column is lowercase)
+    if (Array.isArray(imageurls) && imageurls.length >= 0) {
+      updateData.imageurls = imageurls;
+    }
+
+    console.log('Update data:', updateData);
+
     const { data: updatedPost, error: updateError } = await supabase
       .from('posts')
-      .update({
-        title,
-        content,
-        tags: (tags || '').split(',').map((tag: string) => tag.trim()).filter(Boolean),
-        game,
-        imageUrls: imageUrls || [],
-      })
+      .update(updateData)
       .eq('slug', cleanSlug)
       .select()
       .single();
 
     if (updateError) {
+      console.error('Database update error:', updateError);
       throw updateError;
     }
+
+    console.log('Post updated successfully:', updatedPost?.id);
 
     return NextResponse.json(updatedPost);
 
   } catch (error: unknown) {
+    console.error('Error in PUT request:', error);
     const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ message: message || 'Internal Server Error' }, { status: 500 });
   }

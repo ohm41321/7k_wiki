@@ -26,7 +26,7 @@ interface EditPostFormProps {
     title: string;
     content: string;
     tags: string[];
-    imageUrls?: string[];
+    imageurls?: string[];
   };
   game: string;
 }
@@ -52,8 +52,13 @@ export default function EditPostForm({ post, game }: EditPostFormProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [stagedFiles, setStagedFiles] = useState<Map<string, File>>(new Map());
-  const [existingImages, setExistingImages] = useState<string[]>(post.imageUrls || []);
+  const [existingImages, setExistingImages] = useState<string[]>(post.imageurls || []);
   const [imagesToDelete, setImagesToDelete] = useState<Set<string>>(new Set());
+
+  // Debug logging for existing images
+  useEffect(() => {
+    console.log('EditPostForm initialized with existing images:', existingImages);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -87,7 +92,7 @@ export default function EditPostForm({ post, game }: EditPostFormProps) {
 
   const stageImageForUpload = (file: File) => {
     const blobUrl = URL.createObjectURL(file);
-    const placeholder = `\n![Uploading ${file.name}...](${blobUrl})\n`;
+    const placeholder = `\n![${file.name}](${blobUrl})\n`;
     setContent(prev => prev + placeholder);
     setStagedFiles(prev => new Map(prev).set(blobUrl, file));
   };
@@ -182,38 +187,99 @@ export default function EditPostForm({ post, game }: EditPostFormProps) {
     const promise = async () => {
       let finalContent = content;
       const uploadPromises: Promise<{ blobUrl: string, finalUrl: string }>[] = [];
-      const markdownImageRegex = /!\\\[[^\\]*\]\((blob:[^)]+)\)/g;
-      let match;
+      const markdownImageRegex = /!\[[^\]]*\]\((blob:[^)]+)\)/g;
+      const matches = [...content.matchAll(markdownImageRegex)];
 
-      while ((match = markdownImageRegex.exec(content)) !== null) {
+      // Upload all images first
+      for (const match of matches) {
         const blobUrl = match[1];
         const fileToUpload = stagedFiles.get(blobUrl);
+
         if (fileToUpload) {
           const formData = new FormData();
           formData.append('file', fileToUpload);
-          const uploadPromise = fetch('/api/upload', { method: 'POST', body: formData })
-            .then(res => res.ok ? res.json() : Promise.reject(new Error('Upload failed')))
-            .then(data => ({ blobUrl, finalUrl: data.url }));
+
+          const uploadPromise = fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+          })
+          .then(async res => {
+            if (!res.ok) {
+              const errorData = await res.json().catch(() => ({}));
+              throw new Error(errorData.error || `Upload failed with status ${res.status}`);
+            }
+            return res.json();
+          })
+          .then(data => ({ blobUrl, finalUrl: data.url }))
+          .catch(error => {
+            console.error('Upload error for blob:', blobUrl, error);
+            throw error;
+          });
+
           uploadPromises.push(uploadPromise);
         }
       }
 
-      const settledUploads = await Promise.all(uploadPromises);
-      settledUploads.forEach(({ blobUrl, finalUrl }) => {
-        finalContent = finalContent.replace(new RegExp(blobUrl, 'g'), finalUrl);
+      // Wait for all uploads to complete
+      const settledUploads = await Promise.allSettled(uploadPromises);
+
+      // Process successful uploads
+      const successfulUploads = settledUploads
+        .filter((result): result is PromiseFulfilledResult<{ blobUrl: string, finalUrl: string }> =>
+          result.status === 'fulfilled'
+        )
+        .map(result => result.value);
+
+      const failedUploads = settledUploads
+        .filter((result): result is PromiseRejectedResult =>
+          result.status === 'rejected'
+        );
+
+      const newImageUrls = successfulUploads.map(({ finalUrl }) => finalUrl);
+
+      // Replace blob URLs with final URLs in content
+      successfulUploads.forEach(({ blobUrl, finalUrl }) => {
+        const regex = new RegExp(blobUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+        finalContent = finalContent.replace(regex, finalUrl);
       });
 
-      // Calculate final image URLs (existing images minus deleted ones)
-      const finalImageUrls = existingImages.filter(url => !imagesToDelete.has(url));
+      // Clean up blob URLs for successful uploads
+      successfulUploads.forEach(({ blobUrl }) => {
+        URL.revokeObjectURL(blobUrl);
+        stagedFiles.delete(blobUrl);
+      });
+
+      // Log failed uploads for debugging
+      if (failedUploads.length > 0) {
+        console.warn('Some image uploads failed:', failedUploads.map(f => f.reason));
+      }
+
+      console.log(`Image upload summary: ${successfulUploads.length} successful, ${failedUploads.length} failed`);
+
+      // Calculate final image URLs (existing images minus deleted ones, plus new ones)
+      const finalImageUrls = [...existingImages.filter(url => !imagesToDelete.has(url)), ...newImageUrls];
 
       console.log('Sending PUT request to:', `/api/posts/${post.slug}`);
       console.log('Post slug:', post.slug);
       console.log('Final image URLs:', finalImageUrls);
+      console.log('Staged files count:', stagedFiles.size);
+      console.log('Request data:', {
+        title: title?.substring(0, 50),
+        contentLength: finalContent?.length,
+        tags,
+        imageUrlsCount: finalImageUrls?.length,
+        game: game
+      });
 
       const res = await fetch(`/api/posts/${post.slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content: finalContent, tags, imageUrls: finalImageUrls }),
+        body: JSON.stringify({
+          title: title.trim(),
+          content: finalContent.trim(),
+          tags: tags.trim(),
+          imageurls: finalImageUrls || []
+        }),
       });
 
       if (!res.ok) {
@@ -328,11 +394,15 @@ export default function EditPostForm({ post, game }: EditPostFormProps) {
                   <h3 className="text-sm font-medium text-gray-400 mb-2">รูปภาพที่มีอยู่</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {existingImages.map((imageUrl, index) => (
-                      <div key={index} className="relative group">
+                      <div key={`${imageUrl}-${index}`} className="relative group">
                         <img
                           src={imageUrl}
                           alt={`Existing image ${index + 1}`}
                           className="w-full h-24 object-cover rounded-md border border-gray-600"
+                          onError={(e) => {
+                            console.error('Failed to load image:', imageUrl);
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-md flex items-center justify-center">
                           <button

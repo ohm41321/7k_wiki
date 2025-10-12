@@ -103,7 +103,7 @@ export default function CreatePostModal() {
   
       const promise = async () => {
         let finalContent = content;
-        const imageUrls: string[] = [];
+        const imageurls: string[] = [];
         
         // แก้ไข: ใช้ regex ที่รองรับทั้ง single line และ multiline
         const markdownImageRegex = /!\[([^\]]*)\]\((blob:[^)]+)\)/g;
@@ -133,7 +133,7 @@ export default function CreatePostModal() {
               
               // แทนที่ blob URL ด้วย URL จริง
               finalContent = finalContent.replace(blobUrl, data.url);
-              imageUrls.push(data.url);
+              imageurls.push(data.url);
               
               // Cleanup: revoke blob URL หลังอัปโหลดสำเร็จ
               URL.revokeObjectURL(blobUrl);
@@ -151,7 +151,7 @@ export default function CreatePostModal() {
           body: JSON.stringify({
             title,
             content: finalContent,
-            imageUrls,
+            imageurls,
             tags,
             category,
             game

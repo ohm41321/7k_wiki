@@ -57,7 +57,7 @@ export interface Database {
           game: string | null
           category: string | null
           tags: string[] | null
-          imageUrls: string[] | null
+          imageurls: string[] | null
           author_id: string | null
         }
         Insert: {
@@ -70,7 +70,7 @@ export interface Database {
           game?: string | null
           category?: string | null
           tags?: string[] | null
-          imageUrls?: string[] | null
+          imageurls?: string[] | null
           author_id?: string | null
         }
         Update: {
@@ -83,7 +83,7 @@ export interface Database {
           game?: string | null
           category?: string | null
           tags?: string[] | null
-          imageUrls?: string[] | null
+          imageurls?: string[] | null
           author_id?: string | null
         }
       }
