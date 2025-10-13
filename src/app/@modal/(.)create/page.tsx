@@ -10,6 +10,7 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkBreaks from 'remark-breaks';
 import { toast } from 'sonner';
+import { showCreatePostSuccessToast } from '@/app/lib/toast-utils';
 
 const customSchema = {
   ...defaultSchema,
@@ -167,18 +168,21 @@ export default function CreatePostModal() {
       };
   
       toast.promise(promise(), {
-        loading: 'Creating post...',
+        loading: 'กำลังสร้างโพสต์...',
         success: (data) => {
+          // Show custom success toast
+          showCreatePostSuccessToast(data.title);
+
           // Clear staged files
           setStagedFiles(new Map());
           router.refresh();
           setTimeout(() => router.back(), 500);
-          return `Post "${data.title}" has been created.`;
+          return `สร้างโพสต์ "${data.title}" สำเร็จแล้ว!`;
         },
         error: (err) => {
           setLoading(false);
           setError(err.message);
-          return `Error: ${err.message}`;
+          return `เกิดข้อผิดพลาด: ${err.message}`;
         },
         finally: () => setLoading(false),
       });

@@ -20,27 +20,27 @@ const eventTypeConfig = {
   update: {
     label: 'อัพเดทเกม',
     color: 'bg-blue-500',
-    icon: '🔄'
+    icon: ''
   },
   maintenance: {
     label: 'ปิดปรับปรุง',
     color: 'bg-red-500',
-    icon: '🔧'
+    icon: ''
   },
   event: {
     label: 'อีเวนต์',
     color: 'bg-purple-500',
-    icon: '🎉'
+    icon: ''
   },
   announcement: {
     label: 'ประกาศ',
     color: 'bg-yellow-500',
-    icon: '📢'
+    icon: ''
   },
   other: {
     label: 'อื่นๆ',
     color: 'bg-gray-500',
-    icon: '📅'
+    icon: ''
   }
 };
 
@@ -163,9 +163,11 @@ export default function GameCalendar() {
   return (
     <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-2xl font-bold text-secondary flex items-center gap-2">
-          <span className="text-3xl">📅</span>
-          ปฏิทินเกม
+        <h3 className="text-2xl font-bold text-secondary">
+          <span className="relative">
+            ปฏิทินเกม
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+          </span>
         </h3>
 
         {/* Month Navigation */}
@@ -211,7 +213,12 @@ export default function GameCalendar() {
 
             return (
               <Reveal key={event.id}>
-                <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/30 hover:border-gray-600/50 transition-all duration-200">
+                <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/30 hover:border-gray-600/50 transition-all duration-200 relative">
+                  {/* Event Type Badge - Top Right Corner */}
+                  <div className={`absolute top-3 right-3 ${eventConfig.color} px-2 py-1 rounded-md text-white text-xs font-medium shadow-lg`}>
+                    {eventConfig.label}
+                  </div>
+
                   <div className="flex items-start gap-3">
                     {/* Game Abbreviation Badge - Show on all devices */}
                     {event.game && (
@@ -228,17 +235,9 @@ export default function GameCalendar() {
                       </div>
                     )}
 
-                    {/* Event Type Icon */}
-                    <div className={`${eventConfig.color} w-10 h-10 rounded-full flex items-center justify-center text-white text-lg flex-shrink-0`}>
-                      {eventConfig.icon}
-                    </div>
-
                     <div className="flex-grow">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                         <h4 className="font-semibold text-textLight text-sm sm:text-base">{event.title}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${eventConfig.color} text-white w-fit`}>
-                          {eventConfig.label}
-                        </span>
                       </div>
 
                       {event.description && (

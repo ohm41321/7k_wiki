@@ -232,7 +232,58 @@ body {
 }
 
 .geometric-particle.circle {
-  border-radius: 50%;
-  background-color: rgba(236, 72, 153, 0.3); /* pink-500 with opacity */
-  box-shadow: 0 0 8px rgba(236, 72, 153, 0.5), 0 0 12px rgba(244, 114, 182, 0.5); /* pink glow */
+   border-radius: 50%;
+   background-color: rgba(236, 72, 153, 0.3); /* pink-500 with opacity */
+   box-shadow: 0 0 8px rgba(236, 72, 153, 0.5), 0 0 12px rgba(244, 114, 182, 0.5); /* pink glow */
+}
+
+/* Enhanced Tab Navigation Utilities */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Animation delays for staggered animations */
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+.animation-delay-600 {
+  animation-delay: 600ms;
+}
+
+/* Enhanced gradient animations */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Tab hover effects */
+@keyframes tab-glow {
+  0% { box-shadow: 0 0 5px rgba(200, 155, 60, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(200, 155, 60, 0.6), 0 0 30px rgba(200, 155, 60, 0.4); }
+  100% { box-shadow: 0 0 5px rgba(200, 155, 60, 0.3); }
+}
+
+.tab-glow:hover {
+  animation: tab-glow 2s ease-in-out infinite;
+}
+
+/* Active tab pulse effect */
+@keyframes active-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.active-tab-pulse {
+  animation: active-pulse 2s ease-in-out infinite;
 }

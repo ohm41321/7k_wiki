@@ -343,8 +343,16 @@ export default function AdminCalendarPage() {
                 )}
 
                 <div className="text-sm text-textLight/60 space-y-1 mb-4">
-                  <p>📅 {formatDate(event.event_date)}</p>
-                  {event.event_time && <p>🕐 {event.event_time}</p>}
+                  <p className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-accent rounded-full"></span>
+                    {formatDate(event.event_date)}
+                  </p>
+                  {event.event_time && (
+                    <p className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-secondary rounded-full"></span>
+                      {event.event_time}
+                    </p>
+                  )}
                   {event.game && <p>🎮 {games.find(g => g.value === event.game)?.label}</p>}
                 </div>
 

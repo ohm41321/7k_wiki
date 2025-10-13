@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import { NextAuthProvider } from "./components/Providers";
 import { Toaster } from 'sonner';
 import CookieBanner from './components/CookieBanner';
+import { ToastContainer } from './components/Toast';
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 const orbitron = Orbitron({ subsets: ["latin"], weight: ["400", "700", "900"], variable: '--font-orbitron' });
@@ -35,6 +36,7 @@ export default function RootLayout({
           <Footer />
           <CookieBanner />
           <Toaster theme="dark" />
+          <ToastContainer />
         </NextAuthProvider>
       </body>
     </html>

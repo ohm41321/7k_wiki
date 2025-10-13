@@ -5,52 +5,12 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import Reveal from '@/app/components/Reveal';
 import HeroBackground from '@/app/components/HeroBackground';
-import lostswordBanner from '@/pic/lostsword_thumnail.png';
-import wutheringWavesBanner from '@/pic/capsule_616x353.jpg';
-import blueArchiveBanner from '@/pic/ba.jpg';
-import genericBanner from '@/pic/noname_feature.jpg';
-import honkaiStarRailBanner from '@/pic/honkai-star-rail-official-art.jpg';
-import genshinImpactBanner from '@/pic/genshin.jpeg';
-import punishingGrayRavenBanner from '@/pic/pgr.jpg';
-import zenlessZoneZeroBanner from '@/pic/zenless_featured.jpg';
 import monsterHunterWildsBanner from '@/pic/mhwilds.jpg';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
 // Define a mapping for game-specific details
 const gameDetails: { [key: string]: { title: string; banner: any } } = {
-  '7KRe': {
-    title: 'Seven Knights Re:Birth',
-    banner: genericBanner,
-  },
-  'LostSword': {
-    title: 'LostSword',
-    banner: lostswordBanner,
-  },
-  'WutheringWaves': {
-    title: 'Wuthering Waves',
-    banner: wutheringWavesBanner,
-  },
-  'PunishingGrayRaven': {
-    title: 'Punishing: Gray Raven',
-    banner: punishingGrayRavenBanner,
-  },
-  'BlueArchive': {
-    title: 'Blue Archive',
-    banner: blueArchiveBanner,
-  },
-  'HonkaiStarRail': {
-    title: 'Honkai: Star Rail',
-    banner: honkaiStarRailBanner,
-  },
-  'GenshinImpact': {
-    title: 'Genshin Impact',
-    banner: genshinImpactBanner,
-  },
-  'ZenlessZoneZero': {
-    title: 'Zenless Zone Zero',
-    banner: zenlessZoneZeroBanner,
-  },
   'MonsterHunterWilds': {
     title: 'Monster Hunter Wilds',
     banner: monsterHunterWildsBanner,
@@ -60,13 +20,13 @@ const gameDetails: { [key: string]: { title: string; banner: any } } = {
 // No longer need PostData interface, type will be inferred from getPosts()
 
 export default function GamePage({ params }: { params: { game: string } }) {
-   const [posts, setPosts] = useState<any[]>([]);
-   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
-   const [loading, setLoading] = useState(true);
-   const [user, setUser] = useState<User | null>(null);
-   const [activeTab, setActiveTab] = useState<string>('all');
-   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-   const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
+    const [posts, setPosts] = useState<any[]>([]);
+    const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<User | null>(null);
+    const [activeTab, setActiveTab] = useState<string>('all');
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -181,7 +141,7 @@ export default function GamePage({ params }: { params: { game: string } }) {
     setFilteredPosts(filtered);
   }, [posts, selectedCategory]);
 
-  const details = gameDetails[params.game] || { title: params.game, banner: genericBanner };
+  const details = gameDetails[params.game] || { title: 'Monster Hunter Wilds', banner: monsterHunterWildsBanner };
 
   const formatDateThai = (iso: string) => {
     const d = new Date(iso);
@@ -222,7 +182,7 @@ export default function GamePage({ params }: { params: { game: string } }) {
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-yellow-400 drop-shadow-lg mb-2 sm:mb-4 typing inline-block p-2 sm:p-4">{details.title}</h1>
           </Reveal>
           <Reveal replay={true}>
-            <p className="text-base sm:text-lg md:text-xl text-textLight fade-in mt-2 px-2">สารานุกรมเกมกาชา โดย Fonzu</p>
+            <p className="text-base sm:text-lg md:text-xl text-textLight fade-in mt-2 px-2">สารานุกรมเกม Action RPG ชั้นนำ</p>
           </Reveal>
         </div>
 
@@ -363,20 +323,20 @@ export default function GamePage({ params }: { params: { game: string } }) {
                 <Link href={`/${params.game}/posts/${post.slug}`}>
                   <div className="relative w-full aspect-[16/9] overflow-hidden">
                     {post.imageurls && post.imageurls.length > 0 ? (
-                      <Image 
-                        src={post.imageurls[0]} 
-                        alt={post.title} 
+                      <Image
+                        src={post.imageurls[0]}
+                        alt={post.title}
                         fill
-                        style={{ objectFit: 'cover' }} 
+                        style={{ objectFit: 'cover' }}
                         className="transition-transform duration-500 group-hover:scale-110"
                         unoptimized={true}
                       />
                     ) : (
-                      <Image 
-                        src={details.banner} 
-                        alt="Default Post Image" 
+                      <Image
+                        src={details.banner}
+                        alt="Default Post Image"
                         fill
-                        style={{ objectFit: 'cover' }} 
+                        style={{ objectFit: 'cover' }}
                         className="transition-transform duration-500 group-hover:scale-110"
                         unoptimized={true}
                       />
@@ -423,7 +383,7 @@ export default function GamePage({ params }: { params: { game: string } }) {
            )}
          </div>
       </div>
-      
+
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
+import { showLoginSuccessToast } from '@/app/lib/toast-utils'
 
 export default function AuthSuccessMessage() {
   const searchParams = useSearchParams()
@@ -10,7 +11,11 @@ export default function AuthSuccessMessage() {
 
   useEffect(() => {
     if (auth === 'success') {
-      toast.success('🎉 Welcome! You have been successfully signed in!', {
+      // Show custom login success toast
+      showLoginSuccessToast();
+
+      // Also show sonner toast for consistency
+      toast.success('🎉 เข้าสู่ระบบสำเร็จแล้ว!', {
         duration: 5000,
         style: {
           background: '#111111',
