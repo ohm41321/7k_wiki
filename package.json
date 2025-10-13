@@ -24,6 +24,7 @@
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.2.0",
     "cookies-next": "^4.3.0",
+    "dotenv": "^17.2.3",
     "emoji-picker-react": "^4.13.3",
     "framer-motion": "^12.23.22",
     "gray-matter": "^4.0.3",

@@ -60,13 +60,14 @@ const gameDetails: { [key: string]: { title: string; banner: any } } = {
 // No longer need PostData interface, type will be inferred from getPosts()
 
 export default function GamePage({ params }: { params: { game: string } }) {
-   const [posts, setPosts] = useState<any[]>([]);
-   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
-   const [loading, setLoading] = useState(true);
-   const [user, setUser] = useState<User | null>(null);
-   const [activeTab, setActiveTab] = useState<string>('all');
-   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-   const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
+    const game = params.game; // Extract game from params
+    const [posts, setPosts] = useState<any[]>([]);
+    const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<User | null>(null);
+    const [activeTab, setActiveTab] = useState<string>('all');
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [showCategoryFilter, setShowCategoryFilter] = useState<boolean>(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -104,10 +105,29 @@ export default function GamePage({ params }: { params: { game: string } }) {
       setUser(session?.user ?? null);
     });
 
+    // Listen for real-time post updates
+    const postsSubscription = supabase
+      .channel('posts-changes')
+      .on('postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts',
+          filter: `game=eq.${params.game}`
+        },
+        (payload) => {
+          console.log('Real-time post update:', payload);
+          // Refetch posts when there's a change
+          fetchData();
+        }
+      )
+      .subscribe();
+
     return () => {
       authListener.subscription.unsubscribe();
+      postsSubscription.unsubscribe();
     };
-  }, [params.game, supabase.auth]);
+  }, [params.game, supabase]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -233,7 +253,7 @@ export default function GamePage({ params }: { params: { game: string } }) {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-secondary">อัปเดตข่าวสาร ไกด์ และเคล็ดลับ</h2>
            {user && (
-             <Link href={`/create?game=${params.game}`}>
+             <Link href={`/create?game=${game}`}>
                <span className="bg-accent hover:bg-accent-dark text-white font-bold py-2 px-4 rounded-md transition-colors text-sm sm:text-base whitespace-nowrap">
                  Create Post
                </span>
@@ -360,7 +380,7 @@ export default function GamePage({ params }: { params: { game: string } }) {
               filteredPosts.map((post) => (
             <Reveal key={post.slug} className="block">
               <div className="block bg-primary rounded-lg overflow-hidden border-2 border-gray-800 hover:border-accent transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-2xl group">
-                <Link href={`/${params.game}/posts/${post.slug}`}>
+                <Link href={`/${game}/posts/${post.slug}`}>
                   <div className="relative w-full aspect-[16/9] overflow-hidden">
                     {post.imageurls && post.imageurls.length > 0 ? (
                       <Image 
@@ -385,12 +405,12 @@ export default function GamePage({ params }: { params: { game: string } }) {
                 </Link>
                 <div className="p-6">
                   {post.category && (
-                    <Link href={`/${params.game}/category/${post.category.toLowerCase()}`}>
+                    <Link href={`/${game}/category/${post.category.toLowerCase()}`}>
                       <span className="text-accent font-bold text-sm hover:underline">{post.category}</span>
                     </Link>
                   )}
                   <div className="flex items-center gap-2 mb-2 mt-1">
-                    <Link href={`/${params.game}/posts/${post.slug}`}>
+                    <Link href={`/${game}/posts/${post.slug}`}>
                       <h3 className="text-xl font-bold tracking-tight text-secondary group-hover:text-accent transition-colors">{post.title}</h3>
                     </Link>
                     {isNewPost(post.created_at) && (
@@ -402,7 +422,7 @@ export default function GamePage({ params }: { params: { game: string } }) {
 
                   <div className="flex flex-wrap gap-2 mb-3">
                     {post.tags?.map((tag: string) => (
-                      <Link href={`/${params.game}/tags/${tag.toLowerCase()}`} key={tag} className="text-xs bg-gray-700 text-textLight px-2 py-1 rounded-md hover:bg-gray-600 transition-colors">
+                      <Link href={`/${game}/tags/${tag.toLowerCase()}`} key={tag} className="text-xs bg-gray-700 text-textLight px-2 py-1 rounded-md hover:bg-gray-600 transition-colors">
                         #{tag}
                       </Link>
                     ))}

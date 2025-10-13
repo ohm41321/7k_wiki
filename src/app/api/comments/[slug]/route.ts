@@ -51,9 +51,16 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   }
 
   try {
-    const { content, author_name } = await req.json();
-    if (!content || !author_name) {
-      return NextResponse.json({ error: 'Content and author name are required' }, { status: 400 });
+    // Get authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const { content } = await req.json();
+    if (!content) {
+      return NextResponse.json({ error: 'Comment content is required' }, { status: 400 });
     }
 
     const { data: post, error: postError } = await supabase
@@ -66,10 +73,24 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
+    // Get user profile information
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', user.id)
+      .single();
+
+    const authorName = userProfile?.name || user.email?.split('@')[0] || 'Anonymous';
+
     // Perform the insert but do not select the result back
     const { error } = await supabase
       .from('comments')
-      .insert([{ post_id: post.id, author_name: author_name, content }]);
+      .insert([{
+        post_id: post.id,
+        author_name: authorName,
+        content,
+        author_id: user.id // Add author_id for user reference
+      }]);
 
     if (error) throw error;
 

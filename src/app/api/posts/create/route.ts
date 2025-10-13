@@ -19,6 +19,9 @@ export async function POST(req: NextRequest) {
     const postData = await req.json();
     const { title, content, tags, category, game, imageurls } = postData;
 
+    // Debug logging
+    console.log('Creating post with data:', { title, content, tags, category, game, imageurls });
+
     if (!title || !game) {
       return NextResponse.json({ message: 'Missing required fields: title, game' }, { status: 400 });
     }

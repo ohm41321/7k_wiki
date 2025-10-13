@@ -175,8 +175,17 @@ export default function CreatePostModal() {
 
           // Clear staged files
           setStagedFiles(new Map());
+
+          // Force refresh the current page and go back
           router.refresh();
-          setTimeout(() => router.back(), 500);
+          // Use window.location.reload as fallback if router.refresh doesn't work
+          setTimeout(() => {
+            if (typeof window !== 'undefined') {
+              window.location.reload();
+            } else {
+              router.back();
+            }
+          }, 500);
           return `สร้างโพสต์ "${data.title}" สำเร็จแล้ว!`;
         },
         error: (err) => {

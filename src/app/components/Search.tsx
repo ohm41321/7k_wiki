@@ -7,6 +7,7 @@ import Link from 'next/link';
 interface Post {
   slug: string;
   title: string;
+  game: string;
 }
 
 export default function Search() {
@@ -47,7 +48,7 @@ export default function Search() {
         <ul className="absolute top-full mt-2 w-full bg-gray-800 rounded-lg shadow-lg z-10">
           {results.map(post => (
             <li key={post.slug}>
-              <Link href={`/posts/${post.slug}`} className="block px-4 py-2 hover:bg-gray-700">
+              <Link href={`/${post.game}/posts/${post.slug}`} className="block px-4 py-2 hover:bg-gray-700">
                 {post.title}
               </Link>
             </li>

@@ -1,13 +1,107 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
-import p5 from 'p5';
+import React, { useRef, useEffect, useState } from 'react';
 
-// A simplified P5 type interface for our use case
-interface P5 extends p5 {}
+const SketchComponent: React.FC = () => {
+  const sketchRef = useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = useState(false);
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient || !sketchRef.current) return;
+
+    let p5Instance: any = null;
+    let particles: any[] = [];
+    let stars: any[] = [];
+    const particleDensity = 0.00004;
+    const starDensity = 0.0001;
+
+    const loadP5 = async () => {
+      try {
+        const p5 = await import('p5');
+
+        const sketch = (p: any) => {
+          p.setup = () => {
+            if (sketchRef.current) {
+              const canvas = p.createCanvas(sketchRef.current.offsetWidth, sketchRef.current.offsetHeight);
+              canvas.parent(sketchRef.current);
+
+              // Initialize particles (streaks)
+              const numParticles = p.width * p.height * particleDensity;
+              for (let i = 0; i < numParticles; i++) {
+                particles.push(new Particle(p));
+              }
+
+              // Initialize stars
+              const numStars = p.width * p.height * starDensity;
+              for (let i = 0; i < numStars; i++) {
+                stars.push(new Star(p));
+              }
+            }
+          };
+
+          p.draw = () => {
+            p.background(0, 0, 0, 40);
+
+            // Draw stars first, so they are in the background
+            stars.forEach(star => {
+              star.draw();
+            });
+
+            // Draw particles (streaks) on top
+            particles.forEach(particle => {
+              particle.update();
+              particle.draw();
+            });
+          };
+
+          p.windowResized = () => {
+            if (sketchRef.current) {
+              p.resizeCanvas(sketchRef.current.offsetWidth, sketchRef.current.offsetHeight);
+              particles = [];
+              stars = [];
+
+              const numParticles = p.width * p.height * particleDensity;
+              for (let i = 0; i < numParticles; i++) {
+                particles.push(new Particle(p));
+              }
+
+              const numStars = p.width * p.height * starDensity;
+              for (let i = 0; i < numStars; i++) {
+                stars.push(new Star(p));
+              }
+            }
+          };
+        };
+
+        p5Instance = new p5.default(sketch);
+      } catch (error) {
+        console.error('Failed to load p5.js:', error);
+      }
+    };
+
+    loadP5();
+
+    return () => {
+      if (p5Instance) {
+        p5Instance.remove();
+      }
+    };
+  }, [isClient]);
+
+  if (!isClient) {
+    return <div className="absolute inset-0 -z-10 bg-black" />;
+  }
+
+  return <div ref={sketchRef} className="absolute inset-0 -z-10" />;
+};
+
+// Particle and Star classes remain the same but need to be defined after p5 is loaded
 class Particle {
-  p: P5;
+  p: any;
   x: number;
   y: number;
   speed: number;
@@ -15,7 +109,7 @@ class Particle {
   size: number;
   color: any;
 
-  constructor(p: P5) {
+  constructor(p: any) {
     this.p = p;
     this.x = p.random(p.width);
     this.y = p.random(p.height);
@@ -47,13 +141,13 @@ class Particle {
 }
 
 class Star {
-  p: P5;
+  p: any;
   x: number;
   y: number;
   size: number;
   twinkleOffset: number;
 
-  constructor(p: P5) {
+  constructor(p: any) {
     this.p = p;
     this.x = p.random(p.width);
     this.y = p.random(p.height);
@@ -79,76 +173,6 @@ class Star {
     p.drawingContext.shadowBlur = 0;
   }
 }
-
-const SketchComponent: React.FC = () => {
-  const sketchRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let particles: Particle[] = [];
-    let stars: Star[] = [];
-    const particleDensity = 0.00004;
-    const starDensity = 0.0001;
-
-    const sketch = (p: P5) => {
-      p.setup = () => {
-        if (sketchRef.current) {
-          const canvas = p.createCanvas(sketchRef.current.offsetWidth, sketchRef.current.offsetHeight);
-          canvas.parent(sketchRef.current);
-          
-          // Initialize particles (streaks)
-          const numParticles = p.width * p.height * particleDensity;
-          for (let i = 0; i < numParticles; i++) {
-            particles.push(new Particle(p));
-          }
-
-          // Initialize stars
-          const numStars = p.width * p.height * starDensity;
-          for (let i = 0; i < numStars; i++) {
-            stars.push(new Star(p));
-          }
-        }
-      };
-
-      p.draw = () => {
-        p.background(0, 0, 0, 40);
-        
-        // Draw stars first, so they are in the background
-        stars.forEach(star => {
-          star.draw();
-        });
-
-        // Draw particles (streaks) on top
-        particles.forEach(particle => {
-          particle.update();
-          particle.draw();
-        });
-      };
-
-      p.windowResized = () => {
-        if (sketchRef.current) {
-          p.resizeCanvas(sketchRef.current.offsetWidth, sketchRef.current.offsetHeight);
-          particles = [];
-          stars = [];
-          
-          const numParticles = p.width * p.height * particleDensity;
-          for (let i = 0; i < numParticles; i++) {
-            particles.push(new Particle(p));
-          }
-
-          const numStars = p.width * p.height * starDensity;
-          for (let i = 0; i < numStars; i++) {
-            stars.push(new Star(p));
-          }
-        }
-      };
-    };
-
-    new p5(sketch);
-
-  }, []);
-
-  return <div ref={sketchRef} className="absolute inset-0 -z-10" />;
-};
 
 export default function RisingLightStreaks() {
   return <SketchComponent />;
