@@ -41,6 +41,7 @@ export default function AdminCalendarPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [showNotificationForm, setShowNotificationForm] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -49,6 +50,13 @@ export default function AdminCalendarPage() {
     event_time: '',
     game: '',
     event_type: 'update'
+  });
+
+  const [notificationData, setNotificationData] = useState({
+    title: 'ทดสอบการแจ้งเตือน',
+    body: 'นี่คือการทดสอบการแจ้งเตือนจาก Fonzu Wiki',
+    url: '/',
+    game: ''
   });
 
   const supabase = createBrowserClient(
@@ -184,22 +192,58 @@ export default function AdminCalendarPage() {
     });
   };
 
+  const sendTestNotification = async () => {
+    try {
+      const response = await fetch('/api/push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_TOKEN || 'test-token'}`
+        },
+        body: JSON.stringify({
+          title: notificationData.title,
+          body: notificationData.body,
+          url: notificationData.url,
+          game: notificationData.game || undefined
+        })
+      });
+
+      if (response.ok) {
+        toast.success('ส่งการแจ้งเตือนสำเร็จ!');
+        setShowNotificationForm(false);
+      } else {
+        toast.error('ส่งการแจ้งเตือนไม่สำเร็จ');
+      }
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      toast.error('เกิดข้อผิดพลาดในการส่งการแจ้งเตือน');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-primary p-3 sm:p-4 lg:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-secondary">จัดการปฏิทินเกม</h1>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('Add event button clicked');
-              setShowAddForm(true);
-            }}
-            className="bg-accent hover:bg-accent-dark text-white font-bold py-2 px-4 rounded-lg transition-colors w-full sm:w-auto text-center"
-          >
-            เพิ่มอีเวนต์ใหม่
-          </button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => setShowNotificationForm(!showNotificationForm)}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-center"
+            >
+              🔔 ส่งแจ้งเตือน
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Add event button clicked');
+                setShowAddForm(true);
+              }}
+              className="bg-accent hover:bg-accent-dark text-white font-bold py-2 px-4 rounded-lg transition-colors text-center"
+            >
+              เพิ่มอีเวนต์ใหม่
+            </button>
+          </div>
         </div>
 
         {showAddForm && (
@@ -309,6 +353,93 @@ export default function AdminCalendarPage() {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Push Notification Section */}
+        {showNotificationForm && (
+          <div className="bg-gray-800/50 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8 border border-purple-500/30">
+            <h2 className="text-xl font-semibold text-textLight mb-4 flex items-center gap-2">
+              <span className="text-purple-400">🔔</span>
+              ส่งการแจ้งเตือนทดสอบ
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-textLight mb-2">
+                  หัวข้อการแจ้งเตือน
+                </label>
+                <input
+                  type="text"
+                  value={notificationData.title}
+                  onChange={(e) => setNotificationData({ ...notificationData, title: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-textLight focus:ring-2 focus:ring-purple-500"
+                  placeholder="เช่น: มีอัพเดทเกมใหม่!"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-textLight mb-2">
+                  ข้อความการแจ้งเตือน
+                </label>
+                <textarea
+                  value={notificationData.body}
+                  onChange={(e) => setNotificationData({ ...notificationData, body: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-textLight focus:ring-2 focus:ring-purple-500"
+                  placeholder="รายละเอียดการแจ้งเตือน..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-textLight mb-2">
+                    ลิงก์เมื่อคลิก (ไม่บังคับ)
+                  </label>
+                  <input
+                    type="url"
+                    value={notificationData.url}
+                    onChange={(e) => setNotificationData({ ...notificationData, url: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-textLight focus:ring-2 focus:ring-purple-500"
+                    placeholder="เช่น: /GenshinImpact"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-textLight mb-2">
+                    เกมที่เกี่ยวข้อง (ไม่บังคับ)
+                  </label>
+                  <select
+                    value={notificationData.game}
+                    onChange={(e) => setNotificationData({ ...notificationData, game: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-textLight focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">เลือกเกม</option>
+                    {games.map(game => (
+                      <option key={game.value} value={game.value}>{game.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={sendTestNotification}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  ส่งการแจ้งเตือน
+                </button>
+                <button
+                  onClick={() => setShowNotificationForm(false)}
+                  className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

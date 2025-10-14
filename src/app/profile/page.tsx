@@ -7,6 +7,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import Navbar from '@/app/components/Navbar';
 import Footer from '@/app/components/Footer';
+import PushNotificationManager from '@/app/components/PushNotificationManager';
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
@@ -127,7 +128,6 @@ export default function ProfilePage() {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">กำลังโหลด...</div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -178,6 +178,11 @@ export default function ProfilePage() {
             >
               {updating ? 'กำลังอัปเดต...' : 'อัปเดตโปรไฟล์'}
             </button>
+          </div>
+
+          {/* Push Notifications */}
+          <div className="bg-gray-800 rounded-lg p-6 mb-8">
+            <PushNotificationManager />
           </div>
 
           {/* User Posts */}
@@ -238,7 +243,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }

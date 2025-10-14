@@ -1,0 +1,37 @@
+{
+  "name": "Fonzu Wiki - สารานุกรมเกมกาชา",
+  "short_name": "Fonzu Wiki",
+  "description": "สารานุกรมข่าวสาร ไกด์ และข้อมูลเกมกาชา",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a1428",
+  "theme_color": "#ff6b35",
+  "orientation": "portrait-primary",
+  "categories": ["games", "entertainment", "reference"],
+  "lang": "th",
+  "dir": "ltr",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/vercel.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/vercel.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/pic/7k_banner.webp",
+      "sizes": "1280x720",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "Fonzu Wiki Homepage"
+    }
+  ]
+}
