@@ -18,7 +18,13 @@ export default function Search() {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const res = await fetch('/api/posts');
+      const res = await fetch(`/api/posts?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       const posts = await res.json();
       setAllPosts(posts);
     };

@@ -77,8 +77,14 @@ export default function GamePage({ params }: { params: { game: string } }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch posts from API
-        const postsResponse = await fetch('/api/posts');
+        // Fetch posts from API with cache busting
+        const postsResponse = await fetch(`/api/posts?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         const allPosts = await postsResponse.json();
         const filteredPosts = allPosts.filter((post: any) => post.game === params.game);
         // Sort posts from newest to oldest
