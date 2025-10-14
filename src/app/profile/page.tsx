@@ -184,6 +184,20 @@ export default function ProfilePage() {
             <PushNotificationManager />
           </div>
 
+          {/* Settings */}
+          <div className="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold mb-4 text-accent">ตั้งค่า</h2>
+            <button
+              onClick={() => {
+                localStorage.removeItem('seen_announcements');
+                alert('ล้างข้อมูลประกาศที่เคยเห็นแล้ว');
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              ล้างข้อมูลประกาศที่เคยเห็นแล้ว
+            </button>
+          </div>
+
           {/* User Posts */}
           <div className="bg-gray-800 rounded-lg p-6 mb-8">
             <h2 className="text-xl font-semibold mb-4 text-accent">โพสต์ของฉัน ({userPosts.length})</h2>

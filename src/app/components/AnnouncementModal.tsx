@@ -18,376 +18,242 @@ interface Announcement {
 }
 
 interface AnnouncementModalProps {
-  autoShow?: boolean; // Whether to show modal automatically on mount
-  maxPriority?: number; // Maximum priority to show (default: 3)
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export default function AnnouncementModal({
-  autoShow = true,
-  maxPriority = 1  // Show all announcements on web
-}: AnnouncementModalProps) {
+export default function AnnouncementModal({ isOpen, onClose }: AnnouncementModalProps) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [unseenAnnouncements, setUnseenAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [showIndicator, setShowIndicator] = useState(false);
-
   const router = useRouter();
 
   useEffect(() => {
-    fetchAnnouncements();
-  }, []);
-
-  useEffect(() => {
-    if (autoShow && unseenAnnouncements.length > 0 && !loading) {
-      // Show indicator first, then modal
-      setShowIndicator(true);
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-        setShowIndicator(false);
-        playNotificationSound(); // Play sound when modal opens
-      }, 500); // Reduced delay for web
-      return () => clearTimeout(timer);
+    if (isOpen) {
+      fetchAnnouncements();
     }
-  }, [unseenAnnouncements, loading, autoShow]);
+  }, [isOpen]);
+
+  // Handle ESC key for dialog
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
+  // Handle backdrop click
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
-      setHasError(false);
-
       const response = await fetch('/api/announcements?limit=20');
-      if (!response.ok) throw new Error('Failed to fetch announcements');
+      if (!response.ok) throw new Error('Failed to fetch');
 
       const data = await response.json();
-      const fetchedAnnouncements: Announcement[] = data.announcements || [];
-
-      // Filter by priority and check if user has seen them
-      const highPriorityAnnouncements = fetchedAnnouncements.filter(
-        announcement => announcement.priority >= maxPriority
-      );
-
-      const unseen = getUnseenAnnouncements(highPriorityAnnouncements);
-      setAnnouncements(fetchedAnnouncements);
-      setUnseenAnnouncements(unseen);
-
+      setAnnouncements(data.announcements || []);
     } catch (error) {
-      console.error('Error fetching announcements:', error);
-      setHasError(true);
+      console.error('Error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getUnseenAnnouncements = (announcementList: Announcement[]): Announcement[] => {
-    if (typeof window === 'undefined') return announcementList;
-
-    try {
-      const seenAnnouncements = JSON.parse(
-        localStorage.getItem('seen_announcements') || '[]'
-      );
-
-      return announcementList.filter(announcement =>
-        !seenAnnouncements.includes(announcement.id)
-      );
-    } catch (error) {
-      console.error('Error reading seen announcements from localStorage:', error);
-      return announcementList;
-    }
-  };
-
-  const markAsSeen = (announcementId: string) => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const seenAnnouncements = JSON.parse(
-        localStorage.getItem('seen_announcements') || '[]'
-      );
-
-      if (!seenAnnouncements.includes(announcementId)) {
-        seenAnnouncements.push(announcementId);
-        localStorage.setItem('seen_announcements', JSON.stringify(seenAnnouncements));
-      }
-    } catch (error) {
-      console.error('Error saving seen announcement to localStorage:', error);
-    }
-  };
-
-  const handleClose = () => {
-    if (unseenAnnouncements[currentIndex]) {
-      markAsSeen(unseenAnnouncements[currentIndex].id);
-    }
-    setIsVisible(false);
-    setCurrentIndex(0); // Reset index when closing
-  };
-
-  // Play notification sound when modal opens
-  const playNotificationSound = () => {
-    if (typeof window !== 'undefined' && 'Audio' in window) {
-      try {
-        // Create a simple beep sound using Web Audio API
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        oscillator.frequency.value = 800;
-        oscillator.type = 'sine';
-
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.2);
-      } catch (error) {
-        console.log('Could not play notification sound');
-      }
-    }
-  };
-
-  const handleNext = () => {
-    if (currentIndex < unseenAnnouncements.length - 1) {
-      markAsSeen(unseenAnnouncements[currentIndex].id);
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      handleClose();
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
   const handleAction = () => {
-    const currentAnnouncement = unseenAnnouncements[currentIndex];
-    if (currentAnnouncement?.action_url) {
-      markAsSeen(currentAnnouncement.id);
-      router.push(currentAnnouncement.action_url);
-      setIsVisible(false);
+    const announcement = announcements[currentIndex];
+    if (announcement?.action_url) {
+      router.push(announcement.action_url);
+      onClose();
     }
   };
 
-  const getTypeStyles = (type: string) => {
+  const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'success':
-        return {
-          bg: 'bg-green-500/20',
-          border: 'border-green-500/50',
-          icon: '🎉',
-          text: 'text-green-400'
-        };
-      case 'warning':
-        return {
-          bg: 'bg-yellow-500/20',
-          border: 'border-yellow-500/50',
-          icon: '⚠️',
-          text: 'text-yellow-400'
-        };
-      case 'error':
-        return {
-          bg: 'bg-red-500/20',
-          border: 'border-red-500/50',
-          icon: '❌',
-          text: 'text-red-400'
-        };
-      default:
-        return {
-          bg: 'bg-blue-500/20',
-          border: 'border-blue-500/50',
-          icon: 'ℹ️',
-          text: 'text-blue-400'
-        };
+      case 'success': return '🎉';
+      case 'warning': return '⚠️';
+      case 'error': return '❌';
+      default: return 'ℹ️';
     }
   };
 
-  if (loading || hasError) {
-    return null;
-  }
+  if (!isOpen) return null;
 
-  // Show visual indicator before modal appears
-  if (showIndicator && unseenAnnouncements.length > 0) {
+  if (loading) {
     return (
-      <div className="fixed top-4 right-4 z-50">
-        <div className="bg-accent text-white px-4 py-2 rounded-lg shadow-lg animate-bounce">
-          <div className="flex items-center gap-2">
-            <span className="animate-spin">🔔</span>
-            <span className="text-sm font-medium">มีประกาศใหม่!</span>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
+        <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8 rounded-2xl border border-accent/20 shadow-2xl">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin text-accent">⟳</div>
+            <p className="text-textLight">กำลังโหลดประกาศ...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Show notification bell button when there are announcements available
-  if (announcements.length > 0) {
+  if (announcements.length === 0) {
     return (
-      <div className="fixed bottom-4 right-4 z-40">
-        <button
-          onClick={() => {
-            setCurrentIndex(0);
-            setIsVisible(true);
-          }}
-          className={`bg-accent hover:bg-accent-light text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-110 relative ${
-            unseenAnnouncements.length > 0 ? 'animate-bounce' : ''
-          }`}
-          title="แสดงการแจ้งเตือน"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5h5m-1-17v6m0 0v6m0-6h6m-6 0H9" />
-          </svg>
-          {unseenAnnouncements.length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-              {unseenAnnouncements.length}
-            </span>
-          )}
-        </button>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+        <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl border border-accent/20 shadow-2xl max-w-md w-full ring-2 ring-accent/20">
+          <div className="p-8 text-center">
+            <div className="text-4xl mb-4">📭</div>
+            <h3 className="text-textLight text-xl font-bold mb-3">ไม่มีประกาศ</h3>
+            <p className="text-textLight/70 mb-6">ขณะนี้ไม่มีประกาศที่เผยแพร่</p>
+            <button
+              onClick={onClose}
+              className="bg-gradient-to-r from-accent to-secondary hover:from-accent-light hover:to-secondary-light text-black font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg w-full"
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (unseenAnnouncements.length === 0) {
-    return null;
-  }
-
-  const currentAnnouncement = unseenAnnouncements[currentIndex];
-  const typeStyles = getTypeStyles(currentAnnouncement?.type || 'info');
+  const announcement = announcements[currentIndex];
 
   return (
-    <>
-      {/* Modal Backdrop */}
-      {isVisible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="relative max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
-            {/* Modal Content */}
-            <div className={`
-              relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl border-2 ${typeStyles.border}
-              shadow-2xl shadow-black/50 transform transition-all duration-300
-              ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}
-              ring-2 ring-accent/20 ring-offset-4 ring-offset-gray-900
-            `}>
+    <dialog
+      open={isOpen}
+      onClose={onClose}
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-[2147483647] flex items-start justify-center pt-8 pb-8 p-4 bg-transparent m-0 w-full h-full max-w-none max-h-none"
+      style={{
+        background: 'rgba(0, 0, 0, 0.7)',
+        backdropFilter: 'blur(8px)',
+        border: 'none',
+        padding: 0,
+        margin: 0,
+      }}
+    >
+      <div
+        className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl border-2 border-accent/20 shadow-2xl max-w-2xl w-full h-[80vh] max-h-[80vh] flex flex-col ring-2 ring-accent/20 ring-offset-4 ring-offset-gray-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex-shrink-0 p-6 border-b border-accent/20 bg-gradient-to-r from-accent/10 to-secondary/10">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl drop-shadow-lg">{getTypeIcon(announcement?.type || 'info')}</span>
+              <h2 className="text-2xl font-bold text-textLight leading-tight">{announcement?.title}</h2>
+            </div>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                onClose();
+              }}
+              className="text-textLight/60 hover:text-textLight p-2 rounded-lg hover:bg-accent/20 transition-all duration-200 transform hover:scale-110"
+              title="ปิด"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          {announcement?.published_at && (
+            <p className="text-textLight/70 text-sm">
+              เผยแพร่เมื่อ: {new Date(announcement.published_at).toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </p>
+          )}
+        </div>
 
-              {/* Close Button */}
-              <button
-                onClick={handleClose}
-                className="absolute top-4 right-4 z-10 p-2 text-gray-400 hover:text-white transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+        {/* Content */}
+        <div className="flex-1 min-h-0 p-6 overflow-y-auto">
+          {announcement?.image_url && (
+            <div className="mb-6 rounded-xl overflow-hidden border border-accent/20 shadow-lg">
+              <img
+                src={announcement.image_url}
+                alt={announcement.title}
+                className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+          )}
 
-              {/* Header */}
-              <div className={`p-6 pb-4 border-b ${typeStyles.border}`}>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">{typeStyles.icon}</span>
-                  <h2 className="text-2xl font-bold text-white">
-                    {currentAnnouncement?.title}
-                  </h2>
-                  {currentAnnouncement?.version && (
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${typeStyles.bg} ${typeStyles.text}`}>
-                      v{currentAnnouncement.version}
-                    </span>
-                  )}
-                </div>
-
-                {currentAnnouncement && (
-                  <p className="text-gray-300 text-sm">
-                    เผยแพร่เมื่อ: {new Date(currentAnnouncement.published_at).toLocaleDateString('th-TH')}
-                  </p>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="p-6">
-                {currentAnnouncement?.image_url && (
-                  <div className="mb-6 rounded-lg overflow-hidden">
-                    <img
-                      src={currentAnnouncement.image_url}
-                      alt={currentAnnouncement.title}
-                      className="w-full h-48 object-cover"
-                    />
-                  </div>
-                )}
-
-                <div className="prose prose-invert max-w-none mb-6">
-                  <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">
-                    {currentAnnouncement?.content}
-                  </p>
-                </div>
-
-                {/* Action Button */}
-                {currentAnnouncement?.action_url && (
-                  <button
-                    onClick={handleAction}
-                    className="w-full bg-gradient-to-r from-accent to-secondary hover:from-accent-light hover:to-secondary-light text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105"
-                  >
-                    {currentAnnouncement.action_text || 'ดูเพิ่มเติม'}
-                  </button>
-                )}
-              </div>
-
-              {/* Footer with Navigation */}
-              {unseenAnnouncements.length > 1 && (
-                <div className="p-4 border-t border-gray-700 bg-gray-800/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={handlePrevious}
-                        disabled={currentIndex === 0}
-                        className="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                      </button>
-
-                      <span className="text-sm text-gray-400">
-                        {currentIndex + 1} จาก {unseenAnnouncements.length}
-                      </span>
-
-                      <button
-                        onClick={handleNext}
-                        disabled={currentIndex === unseenAnnouncements.length - 1}
-                        className="p-2 text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={handleClose}
-                      className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
-                    >
-                      ข้ามทั้งหมด
-                    </button>
-                  </div>
-
-                  {/* Progress Dots */}
-                  <div className="flex justify-center gap-2 mt-3">
-                    {unseenAnnouncements.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          index === currentIndex ? 'bg-accent' : 'bg-gray-600'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+          <div className="prose prose-invert max-w-none mb-6">
+            <div className="text-textLight leading-relaxed whitespace-pre-wrap text-lg">
+              {announcement?.content}
             </div>
           </div>
+
+          {announcement?.action_url && (
+            <div className="flex justify-center">
+              <button
+                onClick={handleAction}
+                className="bg-gradient-to-r from-accent to-secondary hover:from-accent-light hover:to-secondary-light text-black font-bold py-4 px-8 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-xl hover:shadow-2xl"
+              >
+                {announcement.action_text || 'ดูเพิ่มเติม'}
+              </button>
+            </div>
+          )}
         </div>
-      )}
-    </>
+
+        {/* Navigation */}
+        {announcements.length > 1 && (
+          <div className="flex-shrink-0 p-6 border-t border-accent/20 bg-gradient-to-b from-gray-800/50 to-gray-900/50">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
+                disabled={currentIndex === 0}
+                className="flex items-center gap-2 text-textLight/70 hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 p-2 rounded-lg hover:bg-accent/10"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                ก่อนหน้า
+              </button>
+
+              <div className="flex items-center gap-2">
+                {announcements.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentIndex(index)}
+                    className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                      index === currentIndex
+                        ? 'bg-accent shadow-lg scale-125'
+                        : 'bg-textLight/30 hover:bg-textLight/50'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCurrentIndex(Math.min(announcements.length - 1, currentIndex + 1))}
+                disabled={currentIndex === announcements.length - 1}
+                className="flex items-center gap-2 text-textLight/70 hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 p-2 rounded-lg hover:bg-accent/10"
+              >
+                ถัดไป
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="text-center">
+              <span className="text-textLight/60 text-sm">
+                {currentIndex + 1} จาก {announcements.length} ประกาศ
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </dialog>
   );
 }

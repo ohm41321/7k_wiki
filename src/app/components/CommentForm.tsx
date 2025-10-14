@@ -62,6 +62,7 @@ export default function CommentForm({ slug }: { slug: string }) {
       toast.success('Comment posted!');
       setContent('');
       mutate(`/api/comments/${slug}`); // Re-fetch comments after submission
+      window.location.reload();
     } else {
       toast.error('Failed to post comment.');
     }

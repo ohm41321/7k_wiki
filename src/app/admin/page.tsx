@@ -74,7 +74,9 @@ export default function AdminPage() {
     image_url: '',
     action_url: '',
     action_text: 'ดูเพิ่มเติม',
-    expires_at: ''
+    expires_at: '',
+    published: true,
+    active: true
   });
 
   const supabase = createBrowserClient(
@@ -303,7 +305,9 @@ export default function AdminPage() {
       image_url: announcement.image_url || '',
       action_url: announcement.action_url || '',
       action_text: announcement.action_text || 'ดูเพิ่มเติม',
-      expires_at: announcement.expires_at ? announcement.expires_at.split('T')[0] : ''
+      expires_at: announcement.expires_at ? announcement.expires_at.split('T')[0] : '',
+      published: announcement.published !== undefined ? announcement.published : true,
+      active: announcement.active !== undefined ? announcement.active : true
     });
     setShowAnnouncementForm(true);
   };
@@ -341,7 +345,9 @@ export default function AdminPage() {
       image_url: '',
       action_url: '',
       action_text: 'ดูเพิ่มเติม',
-      expires_at: ''
+      expires_at: '',
+      published: true,
+      active: true
     });
   };
 
@@ -594,9 +600,8 @@ export default function AdminPage() {
                     ))}
                   </select>
                 </div>
-              </div>
 
-              <div className="flex gap-2">
+                <div className="flex gap-2">
                 <button
                   onClick={sendTestNotification}
                   className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
@@ -753,6 +758,35 @@ export default function AdminPage() {
                         className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-textLight focus:ring-2 focus:ring-secondary"
                       />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="published"
+                        checked={announcementFormData.published}
+                        onChange={(e) => setAnnouncementFormData({ ...announcementFormData, published: e.target.checked })}
+                        className="mr-2 w-4 h-4 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent"
+                      />
+                      <label htmlFor="published" className="text-sm font-medium text-textLight">
+                        เผยแพร่ทันที
+                      </label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="active"
+                        checked={announcementFormData.active}
+                        onChange={(e) => setAnnouncementFormData({ ...announcementFormData, active: e.target.checked })}
+                        className="mr-2 w-4 h-4 text-accent bg-gray-700 border-gray-600 rounded focus:ring-accent"
+                      />
+                      <label htmlFor="active" className="text-sm font-medium text-textLight">
+                        ใช้งานอยู่
+                      </label>
+                    </div>
+                  </div>
                   </div>
 
                   <div className="flex gap-2">

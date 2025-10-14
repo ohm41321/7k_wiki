@@ -8,7 +8,7 @@ import { Toaster } from 'sonner';
 import CookieBanner from './components/CookieBanner';
 import { ToastContainer } from './components/Toast';
 import PWAProvider from './components/PWAProvider';
-import AnnouncementModal from './components/AnnouncementModal';
+
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 const orbitron = Orbitron({ subsets: ["latin"], weight: ["400", "700", "900"], variable: '--font-orbitron' });
@@ -115,7 +115,7 @@ export default function RootLayout({
           <Toaster theme="dark" />
           <ToastContainer />
           <PWAProvider />
-          <AnnouncementModal />
+          
         </NextAuthProvider>
       </body>
     </html>

@@ -20,8 +20,7 @@ export async function GET(req: NextRequest) {
       .select('*')
       .eq('published', true)
       .eq('active', true)
-      .not('expires_at', 'is', null)
-      .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order('priority', { ascending: false })
       .order('published_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -105,7 +104,8 @@ export async function POST(req: NextRequest) {
       action_url,
       action_text,
       expires_at,
-      published: false, // Draft by default
+      published: true, // Published by default for immediate visibility
+      active: true, // Active by default
       created_by: user?.id
     };
 

@@ -6,8 +6,9 @@ import Search from './Search';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import { isNewVersionAvailable, getCurrentVersion, updateLastSeenVersion } from '@/app/lib/announcements';
+
 import AnnouncementModal from './AnnouncementModal';
+
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -47,10 +48,7 @@ const Navbar = () => {
 
     // Check for new announcements
     checkForNewAnnouncements();
-
-    // Update last seen version
-    updateLastSeenVersion(getCurrentVersion());
-
+    
     return () => {
       window.removeEventListener('scroll', handleScroll);
       authListener.subscription.unsubscribe();
@@ -77,20 +75,20 @@ const Navbar = () => {
     }
   };
 
-  const handleAnnouncementModalClose = () => {
-    setShowAnnouncementModal(false);
-    // Recheck for new announcements after modal closes
-    setTimeout(() => {
-      checkForNewAnnouncements();
-    }, 1000);
-  };
-
   const handleAnnouncementButtonClick = () => {
     setShowAnnouncementModal(true);
     // Mark announcements as potentially seen when user opens modal
     setTimeout(() => {
       checkForNewAnnouncements();
     }, 500);
+  };
+
+  const handleAnnouncementModalClose = () => {
+    setShowAnnouncementModal(false);
+    // Recheck for new announcements after modal closes
+    setTimeout(() => {
+      checkForNewAnnouncements();
+    }, 1000);
   };
 
   const handleLogout = async () => {
@@ -328,12 +326,10 @@ const Navbar = () => {
       </div>
 
       {/* Announcement Modal */}
-      {showAnnouncementModal && (
-        <AnnouncementModal
-          autoShow={true}
-          maxPriority={1} // Show all announcements when manually opened
-        />
-      )}
+      <AnnouncementModal
+        isOpen={showAnnouncementModal}
+        onClose={handleAnnouncementModalClose}
+      />
     </nav>
   );
 };
