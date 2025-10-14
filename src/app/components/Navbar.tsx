@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation';
 
 import AnnouncementModal from './AnnouncementModal';
 
-
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -45,9 +44,6 @@ const Navbar = () => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
-
-    // Check for new announcements
-    checkForNewAnnouncements();
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -326,10 +322,12 @@ const Navbar = () => {
       </div>
 
       {/* Announcement Modal */}
-      <AnnouncementModal
-        isOpen={showAnnouncementModal}
-        onClose={handleAnnouncementModalClose}
-      />
+      {showAnnouncementModal && (
+        <AnnouncementModal
+          isOpen={showAnnouncementModal}
+          onClose={handleAnnouncementModalClose}
+        />
+      )}
     </nav>
   );
 };

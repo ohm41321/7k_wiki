@@ -176,12 +176,17 @@ export default function CreatePostModal() {
           // Clear staged files
           setStagedFiles(new Map());
 
-          // Close the modal and redirect to the game's page
-          if (game) {
-            router.replace(`/${game}`);
-          } else {
-            router.replace('/');
-          }
+          // Close the modal
+          router.back();
+
+          // Redirect to the game's page after a delay and force reload
+          setTimeout(() => {
+            if (game) {
+              window.location.href = `/${game}`;
+            } else {
+              window.location.href = '/';
+            }
+          }, 5000);
           return `สร้างโพสต์ "${data.title}" สำเร็จแล้ว!`;
         },
         error: (err) => {
