@@ -6,12 +6,16 @@ import Search from './Search';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import { isNewVersionAvailable, getCurrentVersion, updateLastSeenVersion } from '@/app/lib/announcements';
+import AnnouncementModal from './AnnouncementModal';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [hasNewAnnouncements, setHasNewAnnouncements] = useState(false);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,11 +45,53 @@ const Navbar = () => {
       setLoading(false);
     });
 
+    // Check for new announcements
+    checkForNewAnnouncements();
+
+    // Update last seen version
+    updateLastSeenVersion(getCurrentVersion());
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       authListener.subscription.unsubscribe();
     };
   }, [supabase.auth]);
+
+  const checkForNewAnnouncements = async () => {
+    try {
+      const response = await fetch('/api/announcements?limit=5');
+      if (response.ok) {
+        const data = await response.json();
+        const announcements = data.announcements || [];
+
+        // Check if there are unseen high-priority announcements
+        const seenAnnouncements = JSON.parse(localStorage.getItem('seen_announcements') || '[]');
+        const unseenHighPriority = announcements.filter((ann: any) =>
+          ann.priority >= 3 && !seenAnnouncements.includes(ann.id)
+        );
+
+        setHasNewAnnouncements(unseenHighPriority.length > 0);
+      }
+    } catch (error) {
+      console.error('Error checking announcements:', error);
+    }
+  };
+
+  const handleAnnouncementModalClose = () => {
+    setShowAnnouncementModal(false);
+    // Recheck for new announcements after modal closes
+    setTimeout(() => {
+      checkForNewAnnouncements();
+    }, 1000);
+  };
+
+  const handleAnnouncementButtonClick = () => {
+    setShowAnnouncementModal(true);
+    // Mark announcements as potentially seen when user opens modal
+    setTimeout(() => {
+      checkForNewAnnouncements();
+    }, 500);
+  };
 
   const handleLogout = async () => {
     try {
@@ -171,6 +217,24 @@ const Navbar = () => {
 
             <div className="h-6 w-px bg-gray-600"></div>
 
+            {/* Announcement Button */}
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleAnnouncementButtonClick}
+                className="relative text-textLight hover:text-accent p-2 rounded-lg hover:bg-accent/10 transition-all duration-200"
+                title="ประกาศและอัพเดท"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {hasNewAnnouncements && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                )}
+              </button>
+            </div>
+
+            <div className="h-6 w-px bg-gray-600"></div>
+
             <div className="flex items-center space-x-3">
               {renderAuthButtons()}
             </div>
@@ -223,6 +287,24 @@ const Navbar = () => {
             </div>
 
             <div className="border-t border-gray-600 pt-3">
+              <button
+                onClick={() => {
+                  handleAnnouncementButtonClick();
+                  setIsOpen(false);
+                }}
+                className="flex items-center gap-3 text-textLight hover:text-accent px-3 py-2 rounded-lg text-base font-medium transition-colors hover:bg-accent/10 w-full text-left"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ประกาศและอัพเดท
+                {hasNewAnnouncements && (
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse ml-auto"></div>
+                )}
+              </button>
+            </div>
+
+            <div className="border-t border-gray-600 pt-3">
               <div className="px-3 py-2 text-xs text-textLight/60 uppercase tracking-wider font-semibold">
                 บัญชีผู้ใช้
               </div>
@@ -244,6 +326,14 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+
+      {/* Announcement Modal */}
+      {showAnnouncementModal && (
+        <AnnouncementModal
+          autoShow={true}
+          maxPriority={1} // Show all announcements when manually opened
+        />
+      )}
     </nav>
   );
 };

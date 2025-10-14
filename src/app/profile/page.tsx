@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import Navbar from '@/app/components/Navbar';
-import Footer from '@/app/components/Footer';
 import PushNotificationManager from '@/app/components/PushNotificationManager';
 
 export default function ProfilePage() {
@@ -242,7 +241,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 
-// Secure admin-only calendar management
+// Secure admin-only management for calendar events and announcements
 export async function GET() {
   const cookieStore = cookies();
   const supabase = createSupabaseServerComponentClient(cookieStore);

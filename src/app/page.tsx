@@ -336,7 +336,7 @@ export default function FonzuHub() {
           </div>
           <p className="text-sm sm:text-base text-textLight/80 mt-4">
             ติดตามการอัพเดท ปิดปรับปรุง และอีเวนต์พิเศษของเกมทั้งหมด
-            <span className="block text-accent font-semibold mt-1">/admin/calendar</span>
+            <span className="block text-accent font-semibold mt-1">/admin</span>
           </p>
         </div>
 
