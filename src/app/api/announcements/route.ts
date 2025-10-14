@@ -158,6 +158,11 @@ export async function PUT(req: NextRequest) {
     // Add updated_at timestamp
     fieldsToUpdate.updated_at = new Date().toISOString();
 
+    // Handle published_at if being set to published
+    if (fieldsToUpdate.published && !fieldsToUpdate.published_at) {
+      fieldsToUpdate.published_at = new Date().toISOString();
+    }
+
     const { data, error } = await supabase
       .from('announcements')
       .update(fieldsToUpdate)

@@ -24,7 +24,7 @@ interface AnnouncementModalProps {
 
 export default function AnnouncementModal({
   autoShow = true,
-  maxPriority = 3
+  maxPriority = 1  // Show all announcements on web
 }: AnnouncementModalProps) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [unseenAnnouncements, setUnseenAnnouncements] = useState<Announcement[]>([]);
@@ -32,6 +32,7 @@ export default function AnnouncementModal({
   const [isVisible, setIsVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [showIndicator, setShowIndicator] = useState(false);
 
   const router = useRouter();
 
@@ -41,10 +42,13 @@ export default function AnnouncementModal({
 
   useEffect(() => {
     if (autoShow && unseenAnnouncements.length > 0 && !loading) {
-      // Show modal after a short delay for better UX
+      // Show indicator first, then modal
+      setShowIndicator(true);
       const timer = setTimeout(() => {
         setIsVisible(true);
-      }, 1500);
+        setShowIndicator(false);
+        playNotificationSound(); // Play sound when modal opens
+      }, 500); // Reduced delay for web
       return () => clearTimeout(timer);
     }
   }, [unseenAnnouncements, loading, autoShow]);
@@ -116,6 +120,33 @@ export default function AnnouncementModal({
       markAsSeen(unseenAnnouncements[currentIndex].id);
     }
     setIsVisible(false);
+    setCurrentIndex(0); // Reset index when closing
+  };
+
+  // Play notification sound when modal opens
+  const playNotificationSound = () => {
+    if (typeof window !== 'undefined' && 'Audio' in window) {
+      try {
+        // Create a simple beep sound using Web Audio API
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
+      } catch (error) {
+        console.log('Could not play notification sound');
+      }
+    }
   };
 
   const handleNext = () => {
@@ -175,7 +206,52 @@ export default function AnnouncementModal({
     }
   };
 
-  if (loading || hasError || unseenAnnouncements.length === 0) {
+  if (loading || hasError) {
+    return null;
+  }
+
+  // Show visual indicator before modal appears
+  if (showIndicator && unseenAnnouncements.length > 0) {
+    return (
+      <div className="fixed top-4 right-4 z-50">
+        <div className="bg-accent text-white px-4 py-2 rounded-lg shadow-lg animate-bounce">
+          <div className="flex items-center gap-2">
+            <span className="animate-spin">🔔</span>
+            <span className="text-sm font-medium">มีประกาศใหม่!</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show notification bell button when there are announcements available
+  if (announcements.length > 0) {
+    return (
+      <div className="fixed bottom-4 right-4 z-40">
+        <button
+          onClick={() => {
+            setCurrentIndex(0);
+            setIsVisible(true);
+          }}
+          className={`bg-accent hover:bg-accent-light text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-110 relative ${
+            unseenAnnouncements.length > 0 ? 'animate-bounce' : ''
+          }`}
+          title="แสดงการแจ้งเตือน"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5h5m-1-17v6m0 0v6m0-6h6m-6 0H9" />
+          </svg>
+          {unseenAnnouncements.length > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+              {unseenAnnouncements.length}
+            </span>
+          )}
+        </button>
+      </div>
+    );
+  }
+
+  if (unseenAnnouncements.length === 0) {
     return null;
   }
 
@@ -186,13 +262,14 @@ export default function AnnouncementModal({
     <>
       {/* Modal Backdrop */}
       {isVisible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="relative max-w-2xl w-full max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative max-w-2xl w-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-300">
             {/* Modal Content */}
             <div className={`
-              relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border-2 ${typeStyles.border}
+              relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl border-2 ${typeStyles.border}
               shadow-2xl shadow-black/50 transform transition-all duration-300
               ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}
+              ring-2 ring-accent/20 ring-offset-4 ring-offset-gray-900
             `}>
 
               {/* Close Button */}
