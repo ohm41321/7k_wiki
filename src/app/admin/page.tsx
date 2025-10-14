@@ -93,7 +93,6 @@ export default function AdminPage() {
 
   const checkAuthAndFetchEvents = async () => {
     try {
-      // First check if user is authenticated by calling the admin API
       const response = await fetch('/api/admin');
       if (response.status === 401) {
         toast.error('กรุณาเข้าสู่ระบบก่อนจัดการอีเวนต์');
@@ -114,7 +113,6 @@ export default function AdminPage() {
       const response = await fetch('/api/admin');
       if (response.status === 401) {
         toast.error('กรุณาเข้าสู่ระบบก่อนจัดการอีเวนต์');
-        // Don't redirect, just show error and keep user on page
         setEvents([]);
         return;
       }
@@ -363,7 +361,6 @@ export default function AdminPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-secondary">จัดการเนื้อหา</h1>
 
-          {/* Tab Navigation */}
           <div className="flex gap-2 w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('calendar')}
@@ -388,7 +385,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Tab Content */}
         {activeTab === 'calendar' && (
           <>
             <div className="flex gap-2 w-full sm:w-auto mb-6">
@@ -399,12 +395,7 @@ export default function AdminPage() {
                 🔔 ส่งแจ้งเตือน
               </button>
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('Add event button clicked');
-                  setShowAddForm(true);
-                }}
+                onClick={() => setShowAddForm(true)}
                 className="bg-accent hover:bg-accent-dark text-white font-bold py-2 px-4 rounded-lg transition-colors text-center"
               >
                 เพิ่มอีเวนต์ใหม่
@@ -536,7 +527,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Push Notification Section */}
         {showNotificationForm && (
           <div className="bg-gray-800/50 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8 border border-purple-500/30">
             <h2 className="text-xl font-semibold text-textLight mb-4 flex items-center gap-2">
@@ -600,8 +590,9 @@ export default function AdminPage() {
                     ))}
                   </select>
                 </div>
+              </div>
 
-                <div className="flex gap-2">
+              <div className="flex gap-2">
                 <button
                   onClick={sendTestNotification}
                   className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
@@ -622,7 +613,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Announcements Management Section */}
         {activeTab === 'announcements' && (
           <>
             {showAnnouncementForm && (
@@ -787,7 +777,6 @@ export default function AdminPage() {
                       </label>
                     </div>
                   </div>
-                  </div>
 
                   <div className="flex gap-2">
                     <button
@@ -808,7 +797,6 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* Announcements List */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {announcements.map((announcement) => (
                 <div key={announcement.id} className="bg-gray-800/50 rounded-lg p-3 sm:p-4 border border-gray-700 relative">
@@ -873,7 +861,6 @@ export default function AdminPage() {
           </>
         )}
 
-        {/* Calendar Events Section */}
         {activeTab === 'calendar' && (
           <>
             {loading ? (
@@ -920,7 +907,6 @@ export default function AdminPage() {
                       {event.game && <p>🎮 {games.find(g => g.value === event.game)?.label}</p>}
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-2 mt-auto">
                       <button
                         onClick={() => handleEdit(event)}
