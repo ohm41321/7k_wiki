@@ -125,6 +125,68 @@ export interface Database {
           updated_at?: string
         }
       }
+      announcements: {
+        Row: {
+          id: string
+          title: string
+          content: string
+          type: string
+          version: string | null
+          priority: number
+          active: boolean
+          published: boolean
+          published_at: string | null
+          expires_at: string | null
+          target_audience: string
+          game: string | null
+          image_url: string | null
+          action_url: string | null
+          action_text: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          content: string
+          type?: string
+          version?: string | null
+          priority?: number
+          active?: boolean
+          published?: boolean
+          published_at?: string | null
+          expires_at?: string | null
+          target_audience?: string
+          game?: string | null
+          image_url?: string | null
+          action_url?: string | null
+          action_text?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          content?: string
+          type?: string
+          version?: string | null
+          priority?: number
+          active?: boolean
+          published?: boolean
+          published_at?: string | null
+          expires_at?: string | null
+          target_audience?: string
+          game?: string | null
+          image_url?: string | null
+          action_url?: string | null
+          action_text?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: { [_ in never]: never }
     Functions: { [_ in never]: never }
