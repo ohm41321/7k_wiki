@@ -176,12 +176,23 @@ export default function CreatePostModal() {
           // Clear staged files
           setStagedFiles(new Map());
 
-          // Close the modal and redirect to the game's page
-          if (game) {
-            router.replace(`/${game}`);
-          } else {
-            router.replace('/');
-          }
+          // Close the modal first, then redirect to the game's page
+          router.back();
+          setTimeout(() => {
+            if (game) {
+              // Use router.push with a cache-busting parameter to ensure fresh data
+              router.push(`/${game}?t=${Date.now()}`);
+
+              // Also trigger a manual refresh after a delay to ensure the post appears
+              setTimeout(() => {
+                if (typeof window !== 'undefined') {
+                  window.location.reload();
+                }
+              }, 500);
+            } else {
+              router.push(`/?t=${Date.now()}`);
+            }
+          }, 100);
           return `สร้างโพสต์ "${data.title}" สำเร็จแล้ว!`;
         },
         error: (err) => {

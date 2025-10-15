@@ -78,17 +78,16 @@ export default function GamePage({ params }: { params: { game: string } }) {
     const fetchData = async () => {
       try {
         // Fetch posts from API with cache busting
-        const postsResponse = await fetch(`/api/posts?_t=${Date.now()}`, {
+        const postsResponse = await fetch(`/api/posts?game=${params.game}&_t=${Date.now()}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
           }
         });
-        const allPosts = await postsResponse.json();
-        const filteredPosts = allPosts.filter((post: any) => post.game === params.game);
-        // Sort posts from newest to oldest
-        const sortedPosts = filteredPosts.sort((a: any, b: any) =>
+        const posts = await postsResponse.json();
+        // Sort posts from newest to oldest (API now handles game filtering)
+        const sortedPosts = posts.sort((a: any, b: any) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
         setPosts(sortedPosts);
@@ -113,21 +112,52 @@ export default function GamePage({ params }: { params: { game: string } }) {
 
     // Listen for real-time post updates
     const postsSubscription = supabase
-      .channel('posts-changes')
+      .channel(`posts-changes-${params.game}`)
       .on('postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'posts',
-          filter: `game=eq.${params.game}`
+          table: 'posts'
         },
         (payload) => {
-          console.log('Real-time post update:', payload);
-          // Refetch posts when there's a change
-          fetchData();
+          console.log('Real-time post update received:', payload);
+          console.log('Event type:', payload.eventType);
+          console.log('New post data:', payload.new);
+          console.log('Old post data:', payload.old);
+
+          if (payload.eventType === 'INSERT' && payload.new) {
+            // Only add posts for the current game
+            if (payload.new.game === params.game) {
+              setPosts(prevPosts => {
+                // Check if post already exists to avoid duplicates
+                const exists = prevPosts.some(post => post.id === payload.new.id);
+                if (!exists) {
+                  console.log('Adding new post to state:', payload.new.title);
+                  const newPosts = [payload.new, ...prevPosts].sort((a, b) =>
+                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                  );
+                  setFilteredPosts(newPosts);
+                  return newPosts;
+                } else {
+                  console.log('Post already exists, skipping');
+                }
+                return prevPosts;
+              });
+            } else {
+              console.log('Post is for different game:', payload.new.game);
+            }
+          }
         }
       )
       .subscribe();
+
+    console.log('Real-time subscription established for game:', params.game);
+
+    // Test the subscription by checking if it's working
+    setTimeout(() => {
+      console.log('Checking subscription status...');
+      console.log('Subscription state:', postsSubscription.state);
+    }, 2000);
 
     return () => {
       authListener.subscription.unsubscribe();
