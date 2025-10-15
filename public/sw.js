@@ -7,9 +7,19 @@ const STATIC_CACHE_URLS = [
   // Add other static assets as needed
 ];
 
-// Install event - cache static assets
+// Check if we're in development mode
+const isDevelopment = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+
+// Install event - cache static assets (skip in development)
 self.addEventListener('install', (event) => {
   console.log('Service Worker: Installing...');
+
+  if (isDevelopment) {
+    console.log('Service Worker: Skipping cache in development mode');
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -26,9 +36,31 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches (clear all caches in development)
 self.addEventListener('activate', (event) => {
   console.log('Service Worker: Activating...');
+
+  if (isDevelopment) {
+    console.log('Service Worker: Development mode - clearing all caches');
+    event.waitUntil(
+      caches.keys()
+        .then((cacheNames) => {
+          return Promise.all(
+            cacheNames.map((cacheName) => {
+              console.log('Service Worker: Deleting cache in development', cacheName);
+              return caches.delete(cacheName);
+            })
+          );
+        })
+        .then(() => {
+          console.log('Service Worker: All caches cleared in development');
+          return self.clients.claim();
+        })
+    );
+    return;
+  }
+
+  // Production mode - clean up old caches only
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -48,7 +80,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve cached content when offline
+// Fetch event - serve cached content when offline (skip cache in development)
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
@@ -60,6 +92,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // In development mode, always fetch from network
+  if (isDevelopment) {
+    console.log('Service Worker: Development mode - fetching from network');
+    event.respondWith(
+      fetch(event.request)
+        .catch((error) => {
+          console.error('Service Worker: Network fetch failed in development', error);
+          throw error;
+        })
+    );
+    return;
+  }
+
+  // Production mode - use cache strategy
   event.respondWith(
     caches.match(event.request)
       .then((cachedResponse) => {
