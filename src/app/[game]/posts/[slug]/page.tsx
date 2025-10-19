@@ -16,17 +16,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
      return notFound();
    }
 
+   const baseUrl = 'https://fonzu-wiki.vercel.app';
+
    // Get the first image for preview, or use default
    const previewImage = post.imageurls && post.imageurls.length > 0
-     ? post.imageurls[0]
-     : '/pic/7k_banner.webp';
+     ? post.imageurls[0].startsWith('http')
+       ? post.imageurls[0]
+       : `${baseUrl}${post.imageurls[0]}`
+     : `${baseUrl}/pic/7k_banner.webp`;
 
    // Clean description for meta tags
    const cleanDescription = post.content
      ? post.content.replace(/[#*`~]/g, '').substring(0, 200) + '...'
      : 'อ่านบทความและข่าวสารเกมกาชาล่าสุดจาก Fonzu Wiki';
 
-   const baseUrl = 'https://fonzu-wiki.vercel.app';
    const postUrl = `${baseUrl}/${post.game}/posts/${post.slug}`;
 
    return {
