@@ -17,7 +17,7 @@ import genshinImpactBanner from '@/pic/genshin.jpeg';
 import punishingGrayRavenBanner from '@/pic/pgr.jpg';
 import zenlessZoneZeroBanner from '@/pic/zenless_featured.jpg';
 import monsterHunterWildsBanner from '@/pic/mhwilds.jpg';
-import chaosZeroNightmareBanner from '@/pic/CZNM.jpg';
+import chaosZeroNightmareBanner from '@/pic/CZNM2.jpg';
 import AuthSuccessMessage from '@/app/components/AuthSuccessMessage';
 
 // Define game categories

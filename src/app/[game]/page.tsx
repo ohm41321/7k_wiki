@@ -14,7 +14,7 @@ import genshinImpactBanner from '@/pic/genshin.jpeg';
 import punishingGrayRavenBanner from '@/pic/pgr.jpg';
 import zenlessZoneZeroBanner from '@/pic/zenless_featured.jpg';
 import monsterHunterWildsBanner from '@/pic/mhwilds.jpg';
-import chaosZeroNightmareBanner from '@/pic/CZNM.jpg';
+import chaosZeroNightmareBanner from '@/pic/CZNM2.jpg';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
