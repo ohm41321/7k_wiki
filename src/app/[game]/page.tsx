@@ -14,6 +14,7 @@ import genshinImpactBanner from '@/pic/genshin.jpeg';
 import punishingGrayRavenBanner from '@/pic/pgr.jpg';
 import zenlessZoneZeroBanner from '@/pic/zenless_featured.jpg';
 import monsterHunterWildsBanner from '@/pic/mhwilds.jpg';
+import chaosZeroNightmareBanner from '@/pic/CZNM.jpg';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 
@@ -54,6 +55,10 @@ const gameDetails: { [key: string]: { title: string; banner: any } } = {
   'MonsterHunterWilds': {
     title: 'Monster Hunter Wilds',
     banner: monsterHunterWildsBanner,
+  },
+  'ChaosZeroNightmare': {
+    title: 'Chaos Zero Nightmare',
+    banner: chaosZeroNightmareBanner,
   },
 };
 

@@ -17,6 +17,7 @@ import genshinImpactBanner from '@/pic/genshin.jpeg';
 import punishingGrayRavenBanner from '@/pic/pgr.jpg';
 import zenlessZoneZeroBanner from '@/pic/zenless_featured.jpg';
 import monsterHunterWildsBanner from '@/pic/mhwilds.jpg';
+import chaosZeroNightmareBanner from '@/pic/CZNM.jpg';
 import AuthSuccessMessage from '@/app/components/AuthSuccessMessage';
 
 // Define game categories
@@ -69,6 +70,11 @@ const gameDetails: { [key: string]: { title: string; banner: any; category: Game
     banner: monsterHunterWildsBanner,
     category: 'AAA',
   },
+  'ChaosZeroNightmare': {
+    title: 'Chaos Zero Nightmare',
+    banner: chaosZeroNightmareBanner,
+    category: 'Gacha',
+  },
   // Add other games here
 };
 
@@ -78,7 +84,7 @@ export default function FonzuHub() {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   // This will be populated with actual data later
-  const games = ['7KRe', 'LostSword', 'WutheringWaves', 'PunishingGrayRaven', 'BlueArchive', 'HonkaiStarRail', 'GenshinImpact', 'ZenlessZoneZero', 'MonsterHunterWilds'];
+  const games = ['7KRe', 'LostSword', 'WutheringWaves', 'PunishingGrayRaven', 'BlueArchive', 'HonkaiStarRail', 'GenshinImpact', 'ZenlessZoneZero', 'MonsterHunterWilds', 'ChaosZeroNightmare'];
 
   // Filter games based on active tab
   const filteredGames = activeTab === 'All'
